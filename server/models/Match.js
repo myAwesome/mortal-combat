@@ -1,3 +1,5 @@
+const { PlayOffPlayer } = require("./Player");
+
 class TennisSet {
   p1;
   p2;
@@ -16,7 +18,7 @@ class Match {
   winner;
   looser;
 
-  constructor(obj) {
+  constructor(obj = {}) {
     this.player1 = obj.player1;
     this.player2 = obj.player2;
   }
@@ -71,12 +73,23 @@ class PlayOffMatch extends Match {
   nextMatchForWinner;
   nextMatchForLooser;
 
-  constructor(obj) {
+  constructor(obj = {}) {
     super(obj);
     this.stage = obj.stage;
     this.matchNumberInRound = obj.matchNumberInRound;
     this.playersInRound = obj.playersInRound;
+    this.nextMatchForWinner = obj.nextMatchForWinner;
+    this.nextMatchForLooser = obj.nextMatchForLooser;
 
+    if (
+      (this.player1 && this.player1.isBye) ||
+      (this.player2 && this.player2.isBye)
+    ) {
+      this.result = "bye";
+    }
+  }
+
+  determineWinner() {
     if (this.player1.isBye || this.player2.isBye) {
       if (this.player1.isBye) {
         this.winner = this.player2;
@@ -85,24 +98,46 @@ class PlayOffMatch extends Match {
         this.winner = this.player1;
         this.looser = this.player2;
       }
-    }
-  }
-
-  determineWinner() {
-    if (!this.winner) {
+    } else {
       super.determineWinner();
     }
   }
 
   updateMetadataAfterMatch = () => {
-    console.log("updateMetadataAfterMatch");
-    if (this.player1.player.name === "bye") return this.player2;
-    if (this.player2.player.name === "bye") return this.player1;
+    if (this.nextMatchForWinner) {
+      if (!this.nextMatchForWinner.player1) {
+        this.nextMatchForWinner.player1 = new PlayOffPlayer(
+          this.winner.player,
+          this.winner.isBye
+        );
+      } else {
+        this.nextMatchForWinner.player2 = new PlayOffPlayer(
+          this.winner.player,
+          this.winner.isBye
+        );
+      }
+    }
 
-    const p1 = this.result.p1,
-      p2 = this.result.p2;
+    if (this.nextMatchForLooser) {
+      if (!this.nextMatchForLooser.player1) {
+        this.nextMatchForLooser.player1 = new PlayOffPlayer(
+          this.looser.player,
+          this.looser.isBye
+        );
+      } else {
+        this.nextMatchForLooser.player2 = new PlayOffPlayer(
+          this.looser.player,
+          this.looser.isBye
+        );
+      }
+    }
+  };
 
-    return p1 > p2 ? this.player1 : this.player2;
+  hasPlayer = (player) => {
+    return (
+      (this.player1 && this.player1.player === player) ||
+      (this.player2 && this.player2.player === player)
+    );
   };
 }
 module.exports = { Match, PlayOffMatch, GroupMatch };

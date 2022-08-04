@@ -14,8 +14,8 @@ assert.strictEqual(match.winner, federer);
 assert.strictEqual(match.looser, nadal);
 
 /** GroupMatch  **/
-const gFederer = new GroupPlayer(federer);
-const gNadal = new GroupPlayer(nadal);
+const gFederer = new GroupPlayer(new Player(1, "Federer"));
+const gNadal = new GroupPlayer(new Player(2, "Nadal"));
 const groupMatch = new GroupMatch({
   player1: gFederer,
   player2: gNadal,
@@ -32,23 +32,7 @@ assert.strictEqual(gNadal.groupMetadata.win, 1);
 assert.strictEqual(gNadal.groupMetadata.loose, 6);
 assert.strictEqual(gNadal.groupMetadata.points, 0);
 
-/** PlayOffMatch normal  **/
-
-const pFederer = new PlayOffPlayer(federer);
-const pNadal = new PlayOffPlayer(nadal);
-const playOffMatch = new PlayOffMatch({
-  player1: pFederer,
-  player2: pNadal,
-});
-
-playOffMatch.result = "7-5";
-
-assert.strictEqual(playOffMatch.winner, pFederer);
-assert.strictEqual(playOffMatch.looser, pNadal);
-// console.log(playOffMatch);
-
 /** PlayOffMatch Bye  **/
-
 const pJo = new PlayOffPlayer(new Player(3, "Jo"));
 const pBye = new PlayOffPlayer(undefined, true);
 const playOffMatchBye = new PlayOffMatch({
@@ -58,3 +42,30 @@ const playOffMatchBye = new PlayOffMatch({
 
 assert.strictEqual(playOffMatchBye.winner, pJo);
 assert.strictEqual(playOffMatchBye.looser, pBye);
+
+/** PlayOffMatch normal  **/
+const pFederer = new PlayOffPlayer(new Player(1, "Federer"));
+const pNadal = new PlayOffPlayer(new Player(2, "Nadal"));
+const nextMatchForLooser = new PlayOffMatch();
+const nextMatchForWinner = new PlayOffMatch();
+
+const playOffMatch = new PlayOffMatch({
+  player1: pFederer,
+  player2: pNadal,
+  nextMatchForLooser,
+  nextMatchForWinner,
+});
+
+playOffMatch.result = "7-5";
+
+assert.strictEqual(playOffMatch.winner, pFederer);
+assert.strictEqual(playOffMatch.looser, pNadal);
+
+assert.strictEqual(
+  playOffMatch.nextMatchForWinner.hasPlayer(pFederer.player),
+  true
+);
+assert.strictEqual(
+  playOffMatch.nextMatchForLooser.hasPlayer(pNadal.player),
+  true
+);

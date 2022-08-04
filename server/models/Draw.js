@@ -1,5 +1,6 @@
 const { points, fakeResults, DRAW_MAP } = require("./mocks");
 const { PlayOffMatch } = require("./Match");
+const util = require("util");
 
 /**
  * Play-off
@@ -11,9 +12,78 @@ class Draw {
   emptySlots;
   matchesLength;
   matches;
-  constructor() {
-    this.matches = [];
+  constructor(capacity) {
+    this.capacity = capacity;
+    this.matches = new Map();
   }
+
+  createMatches = (capacity) => {
+    const findMatch = (id) => this.matches[id];
+    const getMatchId = (m) =>
+      `p${m.prize}-s${DRAW_MAP[m.playersInRound]}-n${m.matchNumberInRound}`;
+    const getNextMatchIdForWinner = (m) =>
+      getMatchId({
+        prize: m.prize,
+        playersInRound: m.playersInRound / 2,
+        matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
+      });
+    const getPrizeForLooser = (m) => capacity - m.playersInRound / 2 + 1;
+    const getNextMatchIdForLooser = (m) =>
+      getMatchId({
+        prize: getPrizeForLooser(m),
+        playersInRound: m.playersInRound / 2,
+        matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
+      });
+
+    const createNextMatch = (m, isWinner) => {
+      const prize = isWinner ? m.prize : getPrizeForLooser(m);
+      const currentMatch = {
+        prize,
+        stage: DRAW_MAP[m.playersInRound / 2],
+        matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
+        playersInRound: m.playersInRound / 2,
+      };
+      currentMatch.id = getMatchId(currentMatch);
+
+      if (currentMatch.playersInRound > 2) {
+        const nextMatchWinnerId = getNextMatchIdForWinner(currentMatch);
+        if (!findMatch(nextMatchWinnerId)) {
+          this.matches[nextMatchWinnerId] =
+            createNextMatchForWinner(currentMatch);
+        }
+        currentMatch.nextMatchForWinner = this.matches[nextMatchWinnerId];
+
+        const nextMatchLooserId = getNextMatchIdForLooser(currentMatch);
+        if (!findMatch(nextMatchLooserId)) {
+          this.matches[nextMatchLooserId] =
+            createNextMatchForLooser(currentMatch);
+        }
+        currentMatch.nextMatchForLooser = this.matches[nextMatchLooserId];
+      }
+      return currentMatch;
+    };
+
+    const createNextMatchForWinner = (m) => {
+      return createNextMatch(m, true);
+    };
+
+    const createNextMatchForLooser = (m) => {
+      return createNextMatch(m, false);
+    };
+
+    // creating FIRST round matches
+    for (let i = 1; i < capacity / 2 + 1; i++) {
+      const mockedPrevMatch = {
+        prize: 1,
+        stage: DRAW_MAP[capacity * 2],
+        matchNumberInRound: i * 2,
+        playersInRound: capacity * 2,
+      };
+      const currentMatch = createNextMatch(mockedPrevMatch, true);
+      currentMatch.id = getMatchId(currentMatch);
+      this.matches[currentMatch.id] = currentMatch;
+    }
+  };
 
   // 7. fill play-off champ.draw.matches
   fillMatches = (drawPlayersWithLocation) => {
