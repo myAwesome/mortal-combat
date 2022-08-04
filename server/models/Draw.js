@@ -1,6 +1,5 @@
 const { points, fakeResults, DRAW_MAP } = require("./mocks");
 const { PlayOffMatch } = require("./Match");
-const util = require("util");
 
 /**
  * Play-off

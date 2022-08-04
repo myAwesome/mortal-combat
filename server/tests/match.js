@@ -1,6 +1,6 @@
 const { Player, GroupPlayer, PlayOffPlayer } = require("../models/Player");
 const { Match, GroupMatch, PlayOffMatch } = require("../models/Match");
-const assert = require("assert");
+const { strictEqual, stats } = require("../models/util");
 
 /** Match  **/
 const federer = new Player(1, "Federer");
@@ -10,8 +10,8 @@ const match = new Match({
   player2: nadal,
 });
 match.result = "6-1";
-assert.strictEqual(match.winner, federer);
-assert.strictEqual(match.looser, nadal);
+strictEqual(match.winner, federer);
+strictEqual(match.looser, nadal);
 
 /** GroupMatch  **/
 const gFederer = new GroupPlayer(new Player(1, "Federer"));
@@ -23,14 +23,14 @@ const groupMatch = new GroupMatch({
 
 groupMatch.result = "6-1";
 
-assert.strictEqual(groupMatch.winner, gFederer);
-assert.strictEqual(groupMatch.looser, gNadal);
-assert.strictEqual(gFederer.groupMetadata.win, 6);
-assert.strictEqual(gFederer.groupMetadata.loose, 1);
-assert.strictEqual(gFederer.groupMetadata.points, 1);
-assert.strictEqual(gNadal.groupMetadata.win, 1);
-assert.strictEqual(gNadal.groupMetadata.loose, 6);
-assert.strictEqual(gNadal.groupMetadata.points, 0);
+strictEqual(groupMatch.winner, gFederer);
+strictEqual(groupMatch.looser, gNadal);
+strictEqual(gFederer.groupMetadata.win, 6);
+strictEqual(gFederer.groupMetadata.loose, 1);
+strictEqual(gFederer.groupMetadata.points, 1);
+strictEqual(gNadal.groupMetadata.win, 1);
+strictEqual(gNadal.groupMetadata.loose, 6);
+strictEqual(gNadal.groupMetadata.points, 0);
 
 /** PlayOffMatch Bye  **/
 const pJo = new PlayOffPlayer(new Player(3, "Jo"));
@@ -40,8 +40,8 @@ const playOffMatchBye = new PlayOffMatch({
   player2: pBye,
 });
 
-assert.strictEqual(playOffMatchBye.winner, pJo);
-assert.strictEqual(playOffMatchBye.looser, pBye);
+strictEqual(playOffMatchBye.winner, pJo);
+strictEqual(playOffMatchBye.looser, pBye);
 
 /** PlayOffMatch normal  **/
 const pFederer = new PlayOffPlayer(new Player(1, "Federer"));
@@ -58,14 +58,10 @@ const playOffMatch = new PlayOffMatch({
 
 playOffMatch.result = "7-5";
 
-assert.strictEqual(playOffMatch.winner, pFederer);
-assert.strictEqual(playOffMatch.looser, pNadal);
+strictEqual(playOffMatch.winner, pFederer);
+strictEqual(playOffMatch.looser, pNadal);
 
-assert.strictEqual(
-  playOffMatch.nextMatchForWinner.hasPlayer(pFederer.player),
-  true
-);
-assert.strictEqual(
-  playOffMatch.nextMatchForLooser.hasPlayer(pNadal.player),
-  true
-);
+strictEqual(playOffMatch.nextMatchForWinner.hasPlayer(pFederer.player), true);
+strictEqual(playOffMatch.nextMatchForLooser.hasPlayer(pNadal.player), true);
+
+stats();
