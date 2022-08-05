@@ -17,7 +17,7 @@ class Draw {
   }
 
   createMatches = (capacity) => {
-    const findMatch = (id) => this.matches[id];
+    const findMatch = (id) => this.matches.get(id);
     const getMatchId = (m) =>
       `p${m.prize}-s${DRAW_MAP[m.playersInRound]}-n${m.matchNumberInRound}`;
     const getNextMatchIdForWinner = (m) =>
@@ -26,7 +26,8 @@ class Draw {
         playersInRound: m.playersInRound / 2,
         matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
       });
-    const getPrizeForLooser = (m) => capacity - m.playersInRound / 2 + 1;
+
+    const getPrizeForLooser = (m) => m.prize + m.playersInRound / 2;
     const getNextMatchIdForLooser = (m) =>
       getMatchId({
         prize: getPrizeForLooser(m),
@@ -47,17 +48,21 @@ class Draw {
       if (currentMatch.playersInRound > 2) {
         const nextMatchWinnerId = getNextMatchIdForWinner(currentMatch);
         if (!findMatch(nextMatchWinnerId)) {
-          this.matches[nextMatchWinnerId] =
-            createNextMatchForWinner(currentMatch);
+          this.matches.set(
+            nextMatchWinnerId,
+            createNextMatchForWinner(currentMatch)
+          );
         }
-        currentMatch.nextMatchForWinner = this.matches[nextMatchWinnerId];
+        currentMatch.nextMatchForWinner = this.matches.get(nextMatchWinnerId);
 
         const nextMatchLooserId = getNextMatchIdForLooser(currentMatch);
         if (!findMatch(nextMatchLooserId)) {
-          this.matches[nextMatchLooserId] =
-            createNextMatchForLooser(currentMatch);
+          this.matches.set(
+            nextMatchLooserId,
+            createNextMatchForLooser(currentMatch)
+          );
         }
-        currentMatch.nextMatchForLooser = this.matches[nextMatchLooserId];
+        currentMatch.nextMatchForLooser = this.matches.get(nextMatchLooserId);
       }
       return currentMatch;
     };
@@ -80,10 +85,11 @@ class Draw {
       };
       const currentMatch = createNextMatch(mockedPrevMatch, true);
       currentMatch.id = getMatchId(currentMatch);
-      this.matches[currentMatch.id] = currentMatch;
+      this.matches.set(currentMatch.id, currentMatch);
     }
   };
 
+  /**
   // 7. fill play-off champ.draw.matches
   fillMatches = (drawPlayersWithLocation) => {
     let j = 0;
@@ -165,5 +171,6 @@ class Draw {
     }, null);
     return playersInRound;
   };
+   **/
 }
 module.exports = { Draw };

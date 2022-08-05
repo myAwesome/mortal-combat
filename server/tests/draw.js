@@ -2,12 +2,21 @@ const { Draw } = require("../models/Draw");
 const { strictEqual, stats } = require("../models/util");
 
 /** Draw  **/
-const capacity = 4;
-const draw = new Draw(capacity);
-strictEqual(draw.capacity, capacity);
-// draw.createMatches(capacity);
+const draw8 = new Draw(8);
+strictEqual(draw8.capacity, 8);
+draw8.createMatches(8);
+strictEqual(draw8.matches.size, 12);
 
-// console.log(util.inspect(draw.matches, false, null, true));
-// console.log(draw.matches);
+const draw16 = new Draw(16);
+draw16.createMatches(16);
+strictEqual(draw16.matches.size, 32);
+
+const draw32 = new Draw(32);
+draw32.createMatches(32);
+strictEqual(draw32.matches.size, 80);
+
+const draw64 = new Draw(64);
+draw64.createMatches(64);
+strictEqual(draw64.matches.size, 192);
 
 stats();
