@@ -1,5 +1,6 @@
 const { ChampionshipPlayer, groupNames } = require("./ChampionshipPlayer");
-const { Group, GroupPlayer } = require("./Group");
+const { Group } = require("./Group");
+const { GroupPlayer } = require("./Player");
 const { Draw } = require("./Draw");
 const {
   calculateDrawCapacity,
@@ -8,7 +9,6 @@ const {
 const { points } = require("./mocks");
 
 class Championship {
-  id;
   name;
   capacity;
   hasGroups;
@@ -21,8 +21,7 @@ class Championship {
   qualifiersAndBye;
   drawPlayersWithLocation;
 
-  constructor(id, name, capacity, hasGroups) {
-    this.id = id;
+  constructor(name, capacity, hasGroups = true) {
     this.name = name;
     this.capacity = capacity;
     this.hasGroups = hasGroups;

@@ -1,8 +1,6 @@
 class Player {
-  id;
   name;
-  constructor(id, name) {
-    this.id = id;
+  constructor(name) {
     this.name = name;
   }
 }
