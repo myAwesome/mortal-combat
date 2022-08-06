@@ -42,7 +42,7 @@ class Championship {
     return true;
   }
 
-  /** from entryList **/
+  /** Create Groups using players from entryList **/
   createGroups = (optimal = 3) => {
     if (this.hasGroups) {
       const groupAmount = Math.floor(this.entryList.length / optimal);
@@ -57,42 +57,31 @@ class Championship {
       });
       this.groups = groups;
       this.groupsLength = this.groups.length;
-    }
-    this.createDraw();
-    this.groups.forEach((g) => g.createMatches());
-    this.groups.forEach((g) => g.players.sort(Group.orderPlaces));
-    this.groups.forEach((g) => {
-      g.players.forEach((p, i) => {
-        p.groupMetadata.place = i + 1;
-        p.groupMetadata.group = g.name;
-        if (i < 2) {
-          p.points = points["16"];
-        }
-        if (i === 2) {
-          p.points = points["3place"];
-        }
-        if (i === 3) {
-          p.points = points["4place"];
-        }
+
+      this.groups.forEach((g) => g.createMatches());
+      this.groups.forEach((g) => g.players.sort(Group.orderPlaces));
+      this.groups.forEach((g) => {
+        g.players.forEach((p, i) => {
+          p.groupMetadata.place = i + 1;
+          p.groupMetadata.group = g.name;
+          if (i < 2) {
+            p.points = points["16"];
+          }
+          if (i === 2) {
+            p.points = points["3place"];
+          }
+          if (i === 3) {
+            p.points = points["4place"];
+          }
+        });
       });
-    });
-
-    const maxDrawCapacity = this.groups.reduce((prev, curr) => {
-      return prev < curr.players.length ? curr.players.length : prev;
-    }, 0);
-
-    // todo: зробити більш читаємо
-    // todo: винести
-    for (let i = 0; i < maxDrawCapacity; i++) {
-      const joinedGroupsResult = [];
-      for (let g of this.groups) {
-        if (g.players[i]) {
-          joinedGroupsResult.push(g.players[i]);
-        }
-      }
-      joinedGroupsResult.sort(Group.orderPlaces);
-      this.joinedGroupsResult.push(...joinedGroupsResult);
     }
+    // todo: this is the end of function
+    this.someOtherCode();
+  };
+
+  someOtherCode = () => {
+    this.joinedGroupsResult = this.createJoinedGroupsResult(this.groups);
 
     // todo: CodeReview   ...[...Array(this.draw.emptySlots).keys()].map((i) => "bye"),
     // todo: pad right,
@@ -102,6 +91,8 @@ class Championship {
         player: { name: "bye" },
       })),
     ];
+
+    this.createDraw();
 
     for (let qualifierIndex in this.qualifiersAndBye) {
       this.drawPlayersWithLocation.push({
@@ -113,6 +104,26 @@ class Championship {
     this.drawPlayersWithLocation.sort((a, b) => {
       return a.location > b.location ? 1 : -1;
     });
+  };
+
+  createJoinedGroupsResult = (groups) => {
+    const result = [];
+    const maxGroupCapacity = groups.reduce((prev, curr) => {
+      return prev < curr.players.length ? curr.players.length : prev;
+    }, 0);
+
+    for (let i = 0; i < maxGroupCapacity; i++) {
+      const joinedGroupsResult = [];
+      for (let g of groups) {
+        if (g.players[i]) {
+          joinedGroupsResult.push(g.players[i]);
+        }
+      }
+      joinedGroupsResult.sort(Group.orderPlaces);
+      result.push(...joinedGroupsResult);
+    }
+
+    return result;
   };
 
   createDraw = () => {
