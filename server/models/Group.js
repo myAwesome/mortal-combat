@@ -48,10 +48,17 @@ class Group {
 
   addPlayer = (player) => {
     if (this.players.length < this.capacity) {
+      player.groupMetadata.group = this.name;
       this.players.push(player);
     } else {
       throw new Error("group is full");
     }
+  };
+
+  orderPlayersByPlace = () => {
+    this.players.forEach((p, i) => {
+      p.groupMetadata.place = i + 1;
+    });
   };
 }
 
