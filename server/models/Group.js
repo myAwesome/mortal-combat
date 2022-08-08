@@ -1,10 +1,11 @@
 const { GroupMatch } = require("./Match");
-const { fakeResults } = require("./mocks");
+const { GroupPlayer } = require("./Player");
 
 class Group {
   name;
   players;
   matches;
+  capacity;
   constructor(name) {
     this.name = name;
     this.players = [];
@@ -39,14 +40,18 @@ class Group {
         const match = new GroupMatch({
           player1: player,
           player2: this.players[opponent_id],
-          // todo: remove fakeResults
         });
-        match.result =
-          fakeResults[Math.floor(Math.random() * fakeResults.length)];
-        match.determineWinner();
         this.matches.push(match);
       }
     });
+  };
+
+  addPlayer = (player) => {
+    if (this.players.length < this.capacity) {
+      this.players.push(player);
+    } else {
+      throw new Error("group is full");
+    }
   };
 }
 

@@ -16,11 +16,12 @@ smash750.entryList = shuffledPlayers;
 strictEqual(smash750.players.length, shuffledPlayers.length);
 
 smash750.createGroups();
-
-// todo: test createJoinedGroupsResult
-
 strictEqual(smash750.groups.length, 5);
 strictEqual(smash750.groups[0].name, "A");
+
+// todo fillResults
+
+// todo: test createJoinedGroupsResult
 
 /**
 

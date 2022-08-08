@@ -43,12 +43,12 @@ class Championship {
   }
 
   /** Create Groups using players from entryList **/
-  createGroups = (optimal = 3) => {
+  createGroups = (optimal = 3, entryList = this.entryList) => {
     if (this.hasGroups) {
-      const groupAmount = Math.floor(this.entryList.length / optimal);
+      const groupAmount = Math.floor(entryList.length / optimal);
       const groups = [];
 
-      this.entryList.forEach((player, index) => {
+      entryList.forEach((player, index) => {
         const gIndex = index % groupAmount;
         if (!groups[gIndex]) {
           groups[gIndex] = new Group(groupNames[gIndex]);
@@ -60,21 +60,6 @@ class Championship {
 
       this.groups.forEach((g) => g.createMatches());
       this.groups.forEach((g) => g.players.sort(Group.orderPlaces));
-      this.groups.forEach((g) => {
-        g.players.forEach((p, i) => {
-          p.groupMetadata.place = i + 1;
-          p.groupMetadata.group = g.name;
-          if (i < 2) {
-            p.points = points["16"];
-          }
-          if (i === 2) {
-            p.points = points["3place"];
-          }
-          if (i === 3) {
-            p.points = points["4place"];
-          }
-        });
-      });
     }
     // todo: this is the end of function
     this.someOtherCode();

@@ -7,19 +7,28 @@ const colors = {
 };
 let passed = 0;
 let failed = 0;
-const x = () => {
-  return (a, b) => {
-    try {
-      assert.strictEqual(a, b);
-      console.log(colors.success, `Passed: "${a}" strictEqual "${b}"`);
-      passed++;
-    } catch (e) {
-      console.log(colors.error, `Failed: "${a}" is not strictEqual "${b}"`);
-      failed++;
-    }
-  };
+
+const strictEqual = (a, b) => {
+  try {
+    assert.strictEqual(a, b);
+    console.log(colors.success, `Passed: "${a}" strictEqual "${b}"`);
+    passed++;
+  } catch (e) {
+    console.log(colors.error, `Failed: "${a}" is not strictEqual "${b}"`);
+    failed++;
+  }
 };
-const strictEqual = x();
+
+const throws = (a) => {
+  try {
+    assert.throws(a);
+    console.log(colors.success, `Passed: throws error as expected"`);
+    passed++;
+  } catch (e) {
+    console.log(colors.error, `Failed: doesnot throws error `);
+    failed++;
+  }
+};
 const stats = () => {
   console.log("-------------------------");
   if (failed) {
@@ -30,4 +39,4 @@ const stats = () => {
   }
 };
 
-module.exports = { isOdd, strictEqual, stats };
+module.exports = { isOdd, strictEqual, throws, stats };
