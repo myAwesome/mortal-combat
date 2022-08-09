@@ -8,6 +8,7 @@ class Group {
   capacity;
   constructor(name) {
     this.name = name;
+    this.capacity = 0;
     this.players = [];
     this.matches = [];
   }
