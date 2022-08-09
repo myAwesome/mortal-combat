@@ -25,7 +25,6 @@ class Championship {
     this.name = name;
     this.capacity = capacity;
     this.hasGroups = hasGroups;
-    this.draw = new Draw(this);
     this.groups = [];
     this.joinedGroupsResult = [];
     this.drawPlayersWithLocation = [];
@@ -60,19 +59,18 @@ class Championship {
 
     this.groups.forEach((g) => g.createMatches());
     this.groups.forEach((g) => g.players.sort(Group.orderPlaces));
-    // todo: this is the end of function
   };
 
-  someOtherCode = () => {
+  prepareQualifiersForDraw = () => {
     this.qualifiersAndBye = [
       ...this.joinedGroupsResult.slice(0, this.draw.qualifiers),
       ...[...Array(this.draw.emptySlots).keys()].map((i) => ({
         player: { name: "bye" },
       })),
     ];
+  };
 
-    this.createDraw();
-
+  seedDrawPlayers = () => {
     for (let qualifierIndex in this.qualifiersAndBye) {
       this.drawPlayersWithLocation.push({
         player: this.qualifiersAndBye[qualifierIndex].player,
@@ -107,11 +105,11 @@ class Championship {
 
   createDraw = () => {
     const qualifiers = this.hasGroups ? this.groupsLength * 2 : this.capacity;
+    this.draw = new Draw(calculateDrawCapacity(qualifiers));
+    this.draw.createMatches(this.draw.capacity);
     this.draw.qualifiers = qualifiers;
-    this.draw.capacity = calculateDrawCapacity(qualifiers);
     this.draw.placesPriority = placesPriority(this.draw.capacity);
     this.draw.emptySlots = this.draw.capacity - qualifiers;
-    this.draw.matchesLength = this.draw.capacity / 2;
   };
 }
 exports.Championship = Championship;

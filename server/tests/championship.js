@@ -18,6 +18,9 @@ smash750.createGroups();
 strictEqual(smash750.groups.length, 3);
 strictEqual(smash750.groups[0].name, "A");
 
+smash750.createDraw();
+
+// fill group results
 smash750.groups.forEach((g) => {
   g.matches.forEach((m) => {
     m.result = fakeResults[Math.floor(Math.random() * fakeResults.length)];
@@ -39,15 +42,26 @@ smash750.joinedGroupsResult = smash750.createJoinedGroupsResult(
 strictEqual(smash750.joinedGroupsResult[0].groupMetadata.place, 1);
 smash750.joinedGroupsResult.forEach((p, i, arr) => {
   if (arr[i + 1]) {
-    strictEqual(
-      arr[i].groupMetadata.place <= arr[i + 1].groupMetadata.place,
-      true
-    );
+    strictEqual(p.groupMetadata.place <= arr[i + 1].groupMetadata.place, true);
   }
 });
+smash750.prepareQualifiersForDraw();
+
+strictEqual(
+  smash750.qualifiersAndBye[smash750.qualifiersAndBye.length - 1].player.name,
+  "bye"
+);
+strictEqual(
+  smash750.qualifiersAndBye[smash750.qualifiersAndBye.length - 2].player.name,
+  "bye"
+);
+
+smash750.seedDrawPlayers();
+console.log(smash750.drawPlayersWithLocation);
+
+// todo: test for seedDrawPlayers
 
 /**
-
  // smash750.draw.fillMatches(smash750.drawPlayersWithLocation);
  // 8. mock play-off
  // smash750.draw.handleRounds();

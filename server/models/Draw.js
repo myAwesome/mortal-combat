@@ -9,7 +9,6 @@ class Draw {
   qualifiers;
   placesPriority;
   emptySlots;
-  matchesLength;
   matches;
   constructor(capacity) {
     this.capacity = capacity;
@@ -90,6 +89,7 @@ class Draw {
   };
 
   /**
+   * todo: tests
   // 7. fill play-off champ.draw.matches
   fillMatches = (drawPlayersWithLocation) => {
     let j = 0;
