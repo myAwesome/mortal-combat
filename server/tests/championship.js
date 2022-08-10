@@ -57,12 +57,12 @@ strictEqual(
 );
 
 smash750.seedDrawPlayers();
-console.log(smash750.drawPlayersWithLocation);
-
 // todo: test for seedDrawPlayers
 
+smash750.startDraw();
+console.log(smash750.draw.matches);
+
 /**
- // smash750.draw.fillMatches(smash750.drawPlayersWithLocation);
  // 8. mock play-off
  // smash750.draw.handleRounds();
  **/

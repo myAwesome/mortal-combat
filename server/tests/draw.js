@@ -19,4 +19,15 @@ const draw64 = new Draw(64);
 draw64.createMatches(64);
 strictEqual(draw64.matches.size, 192);
 
+const placesPriority = Draw.calcPlacesPriority(8);
+
+strictEqual(placesPriority[0], 1);
+strictEqual(placesPriority[1], 8);
+strictEqual(placesPriority[2], 4);
+strictEqual(placesPriority[3], 5);
+strictEqual(placesPriority[4], 6);
+strictEqual(placesPriority[5], 3);
+strictEqual(placesPriority[6], 7);
+strictEqual(placesPriority[7], 2);
+
 stats();

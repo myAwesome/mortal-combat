@@ -1,5 +1,5 @@
-const { points, fakeResults, DRAW_MAP } = require("./mocks");
-const { PlayOffMatch } = require("./Match");
+const { DRAW_MAP } = require("./mocks");
+const { isOdd } = require("./util");
 
 /**
  * Play-off
@@ -88,89 +88,50 @@ class Draw {
     }
   };
 
-  /**
-   * todo: tests
-  // 7. fill play-off champ.draw.matches
-  fillMatches = (drawPlayersWithLocation) => {
-    let j = 0;
-    for (let i = 0; i < drawPlayersWithLocation.length - 1; i = i + 2) {
-      j++;
-      const playersInRound = drawPlayersWithLocation.length;
-      this.matches.push(
-        new PlayOffMatch({
-          playersInRound,
-          stage: DRAW_MAP[playersInRound],
-          matchNumberInRound: j,
-          player1: {
-            player: drawPlayersWithLocation[i],
-            points: points["16"],
-            groupMetadata: {
-              points: 0,
-              win: 0,
-              loose: 0,
-            },
-          },
-          player2: {
-            player: drawPlayersWithLocation[i + 1],
-            points: points["16"],
-            groupMetadata: {
-              points: 0,
-              win: 0,
-              loose: 0,
-            },
-          },
-          // todo: remove fakeResults
-          result:
-            drawPlayersWithLocation[i].player.name === "bye" ||
-            drawPlayersWithLocation[i + 1].player.name === "bye"
-              ? "-"
-              : fakeResults[Math.floor(Math.random() * fakeResults.length)],
-        })
+  static calcPlacesPriority = (capacity) => {
+    const places = [...Array(capacity).keys()].map((i) => i + 1);
+    const splitedPlaces = [];
+    const seedPlaces = [];
+
+    // todo: оптимізувати/ зробити хоч якось читаємим
+    const rf = (list) => {
+      if (list.length <= 2) return;
+      splitedPlaces.push([...list]);
+      const middleIndex = Math.ceil(list.length / 2);
+      const firstHalf = list.splice(0, middleIndex);
+      const secondHalf = list.splice(-middleIndex);
+      rf(firstHalf);
+      rf(secondHalf);
+    };
+
+    rf(places);
+    splitedPlaces.sort((b, a) => {
+      if (a.length > b.length) {
+        return 1;
+      }
+      if (a.length < b.length) {
+        return -1;
+      }
+      return 0;
+    });
+
+    splitedPlaces.forEach((el) => {
+      if (!seedPlaces.includes(el[0])) {
+        seedPlaces.push(el[0]);
+      }
+      if (!seedPlaces.includes(el[el.length - 1])) {
+        seedPlaces.push(el[el.length - 1]);
+      }
+    });
+
+    const placesPriority = [...seedPlaces];
+    for (let i = seedPlaces.length - 1; i >= 0; i--) {
+      placesPriority.push(
+        isOdd(seedPlaces[i]) ? seedPlaces[i] + 1 : seedPlaces[i] - 1
       );
     }
-  };
 
-  handleRounds = () => {
-    const nextRound = [];
-    let playersInRound = this.handleRound(this.matches, nextRound);
-    this.matches.push(...nextRound[playersInRound]);
-    while (playersInRound !== 1) {
-      playersInRound = this.handleRound(nextRound[playersInRound], nextRound);
-      this.matches.push(...nextRound[playersInRound]);
-    }
+    return placesPriority;
   };
-
-  handleRound = (matchesInRound, nextRound) => {
-    let j = 0;
-    const playersInRound = matchesInRound[0].playersInRound / 2;
-    console.log(playersInRound);
-    if (playersInRound === 1) {
-      console.log(matchesInRound);
-    }
-    nextRound[playersInRound] = [];
-    matchesInRound.reduce((prev, curr) => {
-      const currWinner = curr.determineWinner();
-      if (!prev) {
-        j++;
-        return {
-          playersInRound,
-          stage: DRAW_MAP[playersInRound],
-          matchNumberInRound: j,
-          player1: currWinner,
-        };
-      } else {
-        nextRound[playersInRound].push(
-          new PlayOffMatch({
-            ...prev,
-            player2: currWinner,
-            result: fakeResults[Math.floor(Math.random() * fakeResults.length)],
-          })
-        );
-        return null;
-      }
-    }, null);
-    return playersInRound;
-  };
-   **/
 }
 module.exports = { Draw };

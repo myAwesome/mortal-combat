@@ -1,12 +1,10 @@
 const { ChampionshipPlayer, groupNames } = require("./ChampionshipPlayer");
 const { Group } = require("./Group");
-const { GroupPlayer } = require("./Player");
+const { GroupPlayer, PlayOffPlayer } = require("./Player");
 const { Draw } = require("./Draw");
-const {
-  calculateDrawCapacity,
-  placesPriority,
-} = require("../builders/play_off");
+const { calculateDrawCapacity } = require("../builders/play_off");
 const { points } = require("./mocks");
+const { isOdd } = require("./util");
 
 class Championship {
   name;
@@ -108,8 +106,25 @@ class Championship {
     this.draw = new Draw(calculateDrawCapacity(qualifiers));
     this.draw.createMatches(this.draw.capacity);
     this.draw.qualifiers = qualifiers;
-    this.draw.placesPriority = placesPriority(this.draw.capacity);
+    this.draw.placesPriority = Draw.calcPlacesPriority(this.draw.capacity);
     this.draw.emptySlots = this.draw.capacity - qualifiers;
+  };
+
+  startDraw = () => {
+    this.drawPlayersWithLocation.forEach((p) => {
+      const isBye = p.player.name === "bye";
+      const mNumberForPlayer = Math.ceil(p.location / 2);
+      this.draw.matches.forEach((m, i, arr) => {
+        if (
+          m.playersInRound === this.drawPlayersWithLocation.length &&
+          m.matchNumberInRound === mNumberForPlayer
+        ) {
+          isOdd(p.location)
+            ? (m.player1 = new PlayOffPlayer(p.player.player, isBye))
+            : (m.player2 = new PlayOffPlayer(p.player.player, isBye));
+        }
+      });
+    });
   };
 }
 exports.Championship = Championship;
