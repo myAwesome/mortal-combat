@@ -1,7 +1,9 @@
-const { strictEqual, stats, isOdd } = require("../models/util");
+const { strictEqual, stats, offTests } = require("../models/util");
 const { Championship } = require("../models/Championship");
-const { players, randResult } = require("../models/mocks");
-const util = require("util");
+const { players, randResult, points } = require("../models/mocks");
+// const util = require("util");
+
+// offTests();
 
 const shufflePlayers = (players, capacity) => {
   return [...players].sort(() => 0.5 - Math.random()).slice(0, capacity);
@@ -10,6 +12,7 @@ const shufflePlayers = (players, capacity) => {
 const smash750 = new Championship("Smash 750", 9);
 strictEqual(smash750.name, "Smash 750");
 strictEqual(smash750.capacity, 9);
+smash750.points = points;
 
 const shuffledPlayers = shufflePlayers(players, smash750.capacity);
 smash750.entryList = shuffledPlayers;
@@ -80,14 +83,9 @@ smash750.draw.matches.forEach((m, i, arr) => {
     m.result = randResult();
   }
 });
+console.log(smash750.players);
 
-smash750.draw.matches.forEach((m, i, arr) => {
-  console.log("");
-  if (m.playersInRound === 2) {
-    console.log("");
-    console.log("");
-    console.log(util.inspect(m, false, null, true));
-  }
-});
+// todo: add points
+// todo: create joinedDrawResult
 
 stats();

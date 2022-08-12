@@ -2,18 +2,19 @@ const { DRAW_MAP } = require("./mocks");
 const { isOdd } = require("./util");
 const { PlayOffMatch } = require("./Match");
 
-/**
- * Play-off
- **/
 class Draw {
   capacity;
   qualifiers;
   placesPriority;
   emptySlots;
   matches;
-  constructor(capacity) {
+  completedMatches;
+  champ;
+  constructor(capacity, champ = null) {
     this.capacity = capacity;
+    this.champ = champ;
     this.matches = new Map();
+    this.completedMatches = 0;
   }
 
   createMatches = (capacity) => {
@@ -43,6 +44,7 @@ class Draw {
         stage: DRAW_MAP[m.playersInRound / 2],
         matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
         playersInRound: m.playersInRound / 2,
+        draw: this,
       });
 
       currentMatch.id = getMatchId(currentMatch);
@@ -136,6 +138,15 @@ class Draw {
     }
 
     return placesPriority;
+  };
+
+  addCompletedMatch = () => {
+    this.completedMatches++;
+    if (this.completedMatches === this.matches.size) {
+      if (this.champ) {
+        this.champ.onCompletedDraw();
+      }
+    }
   };
 }
 module.exports = { Draw };

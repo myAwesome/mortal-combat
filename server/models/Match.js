@@ -74,7 +74,7 @@ class PlayOffMatch extends Match {
   playersInRound;
   nextMatchForWinner;
   nextMatchForLooser;
-
+  draw;
   constructor(obj = {}) {
     super(obj);
     this.prize = obj.prize;
@@ -83,6 +83,7 @@ class PlayOffMatch extends Match {
     this.playersInRound = obj.playersInRound;
     this.nextMatchForWinner = obj.nextMatchForWinner;
     this.nextMatchForLooser = obj.nextMatchForLooser;
+    this.draw = obj.draw;
 
     if (
       (this.player1 && this.player1.isBye) ||
@@ -134,6 +135,7 @@ class PlayOffMatch extends Match {
         );
       }
     }
+    this.draw.addCompletedMatch();
   };
 
   hasPlayer = (player) => {

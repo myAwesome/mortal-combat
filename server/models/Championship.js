@@ -1,9 +1,9 @@
+// todo: move groupNames
 const { ChampionshipPlayer, groupNames } = require("./ChampionshipPlayer");
 const { Group } = require("./Group");
 const { GroupPlayer, PlayOffPlayer } = require("./Player");
 const { Draw } = require("./Draw");
 const { calculateDrawCapacity } = require("../builders/play_off");
-const { points } = require("./mocks");
 const { isOdd } = require("./util");
 
 class Championship {
@@ -35,8 +35,6 @@ class Championship {
     this.players = players
       .map((player) => new ChampionshipPlayer(player))
       .map((cp) => new GroupPlayer(cp));
-
-    return true;
   }
 
   /** Create Groups using players from entryList **/
@@ -103,7 +101,7 @@ class Championship {
 
   createDraw = () => {
     const qualifiers = this.hasGroups ? this.groupsLength * 2 : this.capacity;
-    this.draw = new Draw(calculateDrawCapacity(qualifiers));
+    this.draw = new Draw(calculateDrawCapacity(qualifiers), this);
     this.draw.createMatches(this.draw.capacity);
     this.draw.qualifiers = qualifiers;
     this.draw.placesPriority = Draw.calcPlacesPriority(this.draw.capacity);
@@ -125,6 +123,36 @@ class Championship {
         }
       });
     });
+  };
+
+  // add points for result
+  onCompletedDraw = () => {
+    let stage = this.draw.capacity;
+    while (stage > 1) {
+      console.log(" ");
+      console.log(`Handle ${stage} round`);
+      this.draw.matches.forEach((m) => {
+        if (m.playersInRound === stage && m.prize === 1) {
+          if (m.looser.player) {
+            this.players.forEach((gp) => {
+              if (gp.player.player === m.looser.player) {
+                gp.player.points = this.points[stage];
+              }
+            });
+          }
+          if (stage === 2) {
+            if (m.winner.player) {
+              this.players.forEach((gp) => {
+                if (gp.player.player === m.winner.player) {
+                  gp.player.points = this.points[1];
+                }
+              });
+            }
+          }
+        }
+      });
+      stage = stage / 2;
+    }
   };
 }
 exports.Championship = Championship;

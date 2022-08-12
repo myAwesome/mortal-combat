@@ -8,7 +8,14 @@ const colors = {
 let passed = 0;
 let failed = 0;
 
+let testMode = true;
+
+const offTests = () => {
+  testMode = false;
+};
+
 const strictEqual = (a, b) => {
+  if (!testMode) return;
   try {
     assert.strictEqual(a, b);
     console.log(colors.success, `Passed: "${a}" strictEqual "${b}"`);
@@ -20,6 +27,8 @@ const strictEqual = (a, b) => {
 };
 
 const throws = (a) => {
+  if (!testMode) return;
+
   try {
     assert.throws(a);
     console.log(colors.success, `Passed: throws error as expected"`);
@@ -29,7 +38,10 @@ const throws = (a) => {
     failed++;
   }
 };
+
 const stats = () => {
+  if (!testMode) return;
+
   console.log("-------------------------");
   if (failed) {
     console.log(colors.error, `Failed: ${failed}`);
@@ -39,4 +51,4 @@ const stats = () => {
   }
 };
 
-module.exports = { isOdd, strictEqual, throws, stats };
+module.exports = { isOdd, strictEqual, throws, stats, offTests };
