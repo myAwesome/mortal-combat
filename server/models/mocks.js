@@ -61,10 +61,13 @@ const points = {
   "3place": 90,
   "4place": 45,
 };
+const randResult = () =>
+  setResults[Math.floor(Math.random() * setResults.length)];
 
 module.exports = {
   points,
   DRAW_MAP,
   players,
   fakeResults: setResults,
+  randResult,
 };

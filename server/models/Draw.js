@@ -1,5 +1,6 @@
 const { DRAW_MAP } = require("./mocks");
 const { isOdd } = require("./util");
+const { PlayOffMatch } = require("./Match");
 
 /**
  * Play-off
@@ -36,12 +37,14 @@ class Draw {
 
     const createNextMatch = (m, isWinner) => {
       const prize = isWinner ? m.prize : getPrizeForLooser(m);
-      const currentMatch = {
+      // todo: PlayOffMatch
+      const currentMatch = new PlayOffMatch({
         prize,
         stage: DRAW_MAP[m.playersInRound / 2],
         matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
         playersInRound: m.playersInRound / 2,
-      };
+      });
+
       currentMatch.id = getMatchId(currentMatch);
 
       if (currentMatch.playersInRound > 2) {
@@ -76,12 +79,13 @@ class Draw {
 
     // creating FIRST round matches
     for (let i = 1; i < capacity / 2 + 1; i++) {
-      const mockedPrevMatch = {
+      const mockedPrevMatch = new PlayOffMatch({
         prize: 1,
         stage: DRAW_MAP[capacity * 2],
         matchNumberInRound: i * 2,
         playersInRound: capacity * 2,
-      };
+      });
+
       const currentMatch = createNextMatch(mockedPrevMatch, true);
       currentMatch.id = getMatchId(currentMatch);
       this.matches.set(currentMatch.id, currentMatch);

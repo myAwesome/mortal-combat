@@ -67,6 +67,8 @@ class GroupMatch extends Match {
 }
 
 class PlayOffMatch extends Match {
+  id;
+  prize;
   stage;
   matchNumberInRound;
   playersInRound;
@@ -75,6 +77,7 @@ class PlayOffMatch extends Match {
 
   constructor(obj = {}) {
     super(obj);
+    this.prize = obj.prize;
     this.stage = obj.stage;
     this.matchNumberInRound = obj.matchNumberInRound;
     this.playersInRound = obj.playersInRound;

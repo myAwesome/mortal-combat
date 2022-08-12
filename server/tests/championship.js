@@ -1,6 +1,7 @@
-const { strictEqual, stats } = require("../models/util");
+const { strictEqual, stats, isOdd } = require("../models/util");
 const { Championship } = require("../models/Championship");
-const { players, fakeResults } = require("../models/mocks");
+const { players, randResult } = require("../models/mocks");
+const util = require("util");
 
 const shufflePlayers = (players, capacity) => {
   return [...players].sort(() => 0.5 - Math.random()).slice(0, capacity);
@@ -23,7 +24,7 @@ smash750.createDraw();
 // fill group results
 smash750.groups.forEach((g) => {
   g.matches.forEach((m) => {
-    m.result = fakeResults[Math.floor(Math.random() * fakeResults.length)];
+    m.result = randResult();
   });
 });
 
@@ -60,11 +61,33 @@ smash750.seedDrawPlayers();
 // todo: test for seedDrawPlayers
 
 smash750.startDraw();
-console.log(smash750.draw.matches);
+// todo: test for startDraw
 
-/**
- // 8. mock play-off
- // smash750.draw.handleRounds();
- **/
+smash750.draw.matches.forEach((m, i, arr) => {
+  if (m.playersInRound === 8) {
+    m.result = randResult();
+  }
+});
+
+smash750.draw.matches.forEach((m, i, arr) => {
+  if (m.playersInRound === 4) {
+    m.result = randResult();
+  }
+});
+
+smash750.draw.matches.forEach((m, i, arr) => {
+  if (m.playersInRound === 2) {
+    m.result = randResult();
+  }
+});
+
+smash750.draw.matches.forEach((m, i, arr) => {
+  console.log("");
+  if (m.playersInRound === 2) {
+    console.log("");
+    console.log("");
+    console.log(util.inspect(m, false, null, true));
+  }
+});
 
 stats();
