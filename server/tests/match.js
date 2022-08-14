@@ -1,6 +1,7 @@
 const { Player, GroupPlayer, PlayOffPlayer } = require("../models/Player");
 const { Match, GroupMatch, PlayOffMatch } = require("../models/Match");
 const { strictEqual, stats } = require("../models/util");
+const { Draw } = require("../models/Draw");
 
 /** Match  **/
 const federer = new Player("Federer");
@@ -33,17 +34,21 @@ strictEqual(gNadal.groupMetadata.loose, 6);
 strictEqual(gNadal.groupMetadata.points, 0);
 
 /** PlayOffMatch Bye  **/
+const draw = new Draw(2);
 const pJo = new PlayOffPlayer(new Player("Jo"));
 const pBye = new PlayOffPlayer(undefined, true);
 const playOffMatchBye = new PlayOffMatch({
   player1: pJo,
   player2: pBye,
+  draw,
 });
 
 strictEqual(playOffMatchBye.winner, pJo);
 strictEqual(playOffMatchBye.looser, pBye);
 
-/** PlayOffMatch normal  **/
+/** PlayOffMatch normal **/
+const draw2 = new Draw(4);
+
 const pFederer = new PlayOffPlayer(new Player("Federer"));
 const pNadal = new PlayOffPlayer(new Player("Nadal"));
 const nextMatchForLooser = new PlayOffMatch();
@@ -54,6 +59,7 @@ const playOffMatch = new PlayOffMatch({
   player2: pNadal,
   nextMatchForLooser,
   nextMatchForWinner,
+  draw: draw2,
 });
 
 playOffMatch.result = "7-5";

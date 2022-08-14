@@ -58,14 +58,19 @@ const points = {
   16: 180,
   32: 90,
   64: 45,
-  "3place": 90,
-  "4place": 45,
+};
+const groupPoints = {
+  1: 0,
+  2: 0,
+  3: 180,
+  4: 90,
 };
 const randResult = () =>
   setResults[Math.floor(Math.random() * setResults.length)];
 
 module.exports = {
   points,
+  groupPoints,
   DRAW_MAP,
   players,
   fakeResults: setResults,

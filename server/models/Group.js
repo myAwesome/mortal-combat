@@ -1,5 +1,4 @@
 const { GroupMatch } = require("./Match");
-const { GroupPlayer } = require("./Player");
 
 class Group {
   name;

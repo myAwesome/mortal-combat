@@ -18,7 +18,6 @@ strictEqual(draw32.matches.size, 80);
 const draw64 = new Draw(64);
 draw64.createMatches(64);
 strictEqual(draw64.matches.size, 192);
-
 const placesPriority = Draw.calcPlacesPriority(8);
 
 strictEqual(placesPriority[0], 1);

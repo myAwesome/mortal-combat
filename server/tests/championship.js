@@ -1,6 +1,6 @@
 const { strictEqual, stats, offTests } = require("../models/util");
 const { Championship } = require("../models/Championship");
-const { players, randResult, points } = require("../models/mocks");
+const { players, randResult, points, groupPoints } = require("../models/mocks");
 // const util = require("util");
 
 // offTests();
@@ -13,6 +13,7 @@ const smash750 = new Championship("Smash 750", 9);
 strictEqual(smash750.name, "Smash 750");
 strictEqual(smash750.capacity, 9);
 smash750.points = points;
+smash750.groupPoints = groupPoints;
 
 const shuffledPlayers = shufflePlayers(players, smash750.capacity);
 smash750.entryList = shuffledPlayers;
@@ -34,10 +35,10 @@ smash750.groups.forEach((g) => {
 // tested in group test
 smash750.groups.forEach((g) => g.players.sort(g.orderPlaces));
 smash750.groups.forEach((g) => {
-  g.players.forEach((p, i) => {
-    p.groupMetadata.place = i + 1;
-  });
+  g.orderPlayersByPlace();
 });
+
+smash750.addPointsAccordingToPlace();
 
 smash750.joinedGroupsResult = smash750.createJoinedGroupsResult(
   smash750.groups
@@ -83,9 +84,7 @@ smash750.draw.matches.forEach((m, i, arr) => {
     m.result = randResult();
   }
 });
-console.log(smash750.players);
 
-// todo: add points
-// todo: create joinedDrawResult
-
+smash750.createTournamentResult();
+// console.log(smash750.players);
 stats();

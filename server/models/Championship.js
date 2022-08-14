@@ -14,6 +14,7 @@ class Championship {
   groups;
   groupsLength;
   points;
+  groupPoints;
   players;
   joinedGroupsResult;
   qualifiersAndBye;
@@ -32,9 +33,7 @@ class Championship {
     return this.players;
   }
   set entryList(players) {
-    this.players = players
-      .map((player) => new ChampionshipPlayer(player))
-      .map((cp) => new GroupPlayer(cp));
+    this.players = players.map((player) => new ChampionshipPlayer(player));
   }
 
   /** Create Groups using players from entryList **/
@@ -42,19 +41,27 @@ class Championship {
     const groupAmount = Math.floor(entryList.length / optimal);
     const groups = [];
 
-    entryList.forEach((player, index) => {
+    entryList.forEach((championshipPlayer, index) => {
       const gIndex = index % groupAmount;
       if (!groups[gIndex]) {
         groups[gIndex] = new Group(groupNames[gIndex]);
       }
       groups[gIndex].capacity++;
-      groups[gIndex].addPlayer(player);
+      groups[gIndex].addPlayer(new GroupPlayer(championshipPlayer.player));
     });
     this.groups = groups;
     this.groupsLength = this.groups.length;
 
     this.groups.forEach((g) => g.createMatches());
-    this.groups.forEach((g) => g.players.sort(Group.orderPlaces));
+  };
+
+  addPointsAccordingToPlace = () => {
+    this.groups.forEach((g) => {
+      g.players.forEach((p) => {
+        const playerInChamp = this.players.find((cp) => cp.player === p.player);
+        playerInChamp.points = this.groupPoints[p.groupMetadata.place];
+      });
+    });
   };
 
   prepareQualifiersForDraw = () => {
@@ -118,8 +125,8 @@ class Championship {
           m.matchNumberInRound === mNumberForPlayer
         ) {
           isOdd(p.location)
-            ? (m.player1 = new PlayOffPlayer(p.player.player, isBye))
-            : (m.player2 = new PlayOffPlayer(p.player.player, isBye));
+            ? (m.player1 = new PlayOffPlayer(p.player, isBye))
+            : (m.player2 = new PlayOffPlayer(p.player, isBye));
         }
       });
     });
@@ -129,30 +136,36 @@ class Championship {
   onCompletedDraw = () => {
     let stage = this.draw.capacity;
     while (stage > 1) {
-      console.log(" ");
-      console.log(`Handle ${stage} round`);
       this.draw.matches.forEach((m) => {
         if (m.playersInRound === stage && m.prize === 1) {
           if (m.looser.player) {
-            this.players.forEach((gp) => {
-              if (gp.player.player === m.looser.player) {
-                gp.player.points = this.points[stage];
-              }
+            const playerInChamp = this.players.find((cp) => {
+              return cp.player === m.looser.player;
             });
+            if (playerInChamp) {
+              playerInChamp.points = this.points[stage];
+            }
           }
           if (stage === 2) {
             if (m.winner.player) {
-              this.players.forEach((gp) => {
-                if (gp.player.player === m.winner.player) {
-                  gp.player.points = this.points[1];
-                }
+              const playerInChamp = this.players.find((cp) => {
+                return cp.player === m.winner.player;
               });
+              if (playerInChamp) {
+                playerInChamp.points = this.points[1];
+              }
             }
           }
         }
       });
       stage = stage / 2;
     }
+  };
+
+  createTournamentResult = () => {
+    this.players.sort((a, b) => {
+      return a.points < b.points ? 1 : -1;
+    });
   };
 }
 exports.Championship = Championship;

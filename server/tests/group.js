@@ -1,7 +1,6 @@
-const { strictEqual, throws, stats } = require("../models/util");
+const { strictEqual, throws, stats, offTests } = require("../models/util");
 const { Group } = require("../models/Group");
 const { Player, GroupPlayer } = require("../models/Player");
-const { players } = require("../models/mocks");
 
 const groupA = new Group("A");
 groupA.capacity = 3;
@@ -23,7 +22,7 @@ throws(() => {
 groupA.createMatches();
 strictEqual(groupA.matches.length, 3);
 
-groupA.matches.forEach((m, i) => {
+groupA.matches.forEach((m) => {
   if (
     (m.player1 === kei && m.player2 === jo) ||
     (m.player2 === kei && m.player1 === jo)
