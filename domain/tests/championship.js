@@ -9,82 +9,80 @@ const shufflePlayers = (players, capacity) => {
   return [...players].sort(() => 0.5 - Math.random()).slice(0, capacity);
 };
 
-const smash750 = new Championship("Smash 750", 9);
-strictEqual(smash750.name, "Smash 750");
-strictEqual(smash750.capacity, 9);
-smash750.points = points;
-smash750.groupPoints = groupPoints;
+const usOpen = new Championship("Smash 750", 9);
+strictEqual(usOpen.name, "Smash 750");
+strictEqual(usOpen.capacity, 9);
+usOpen.points = points;
+usOpen.groupPoints = groupPoints;
 
-const shuffledPlayers = shufflePlayers(players, smash750.capacity);
-smash750.entryList = shuffledPlayers;
-strictEqual(smash750.players.length, shuffledPlayers.length);
+const shuffledPlayers = shufflePlayers(players, usOpen.capacity);
+usOpen.entryList = shuffledPlayers;
+strictEqual(usOpen.players.length, shuffledPlayers.length);
 
-smash750.createGroups();
-strictEqual(smash750.groups.length, 3);
-strictEqual(smash750.groups[0].name, "A");
+usOpen.createGroups();
+strictEqual(usOpen.groups.length, 3);
+strictEqual(usOpen.groups[0].name, "A");
 
-smash750.createDraw();
+usOpen.createDraw();
 
 // fill group results
-smash750.groups.forEach((g) => {
+usOpen.groups.forEach((g) => {
   g.matches.forEach((m) => {
     m.result = randResult();
   });
 });
 
 // tested in group test
-smash750.groups.forEach((g) => g.players.sort(g.orderPlaces));
-smash750.groups.forEach((g) => {
+usOpen.groups.forEach((g) => g.players.sort(g.orderPlaces));
+usOpen.groups.forEach((g) => {
   g.orderPlayersByPlace();
 });
 
-smash750.addPointsAccordingToPlace();
+usOpen.addPointsAccordingToPlace();
 
-smash750.joinedGroupsResult = smash750.createJoinedGroupsResult(
-  smash750.groups
-);
+usOpen.joinedGroupsResult = usOpen.createJoinedGroupsResult(usOpen.groups);
 
-strictEqual(smash750.joinedGroupsResult[0].groupMetadata.place, 1);
-smash750.joinedGroupsResult.forEach((p, i, arr) => {
+strictEqual(usOpen.joinedGroupsResult[0].groupMetadata.place, 1);
+usOpen.joinedGroupsResult.forEach((p, i, arr) => {
   if (arr[i + 1]) {
     strictEqual(p.groupMetadata.place <= arr[i + 1].groupMetadata.place, true);
   }
 });
-smash750.prepareQualifiersForDraw();
+usOpen.prepareQualifiersForDraw();
 
 strictEqual(
-  smash750.qualifiersAndBye[smash750.qualifiersAndBye.length - 1].player.name,
+  usOpen.qualifiersAndBye[usOpen.qualifiersAndBye.length - 1].player.name,
   "bye"
 );
 strictEqual(
-  smash750.qualifiersAndBye[smash750.qualifiersAndBye.length - 2].player.name,
+  usOpen.qualifiersAndBye[usOpen.qualifiersAndBye.length - 2].player.name,
   "bye"
 );
 
-smash750.seedDrawPlayers();
+usOpen.seedDrawPlayers();
 // todo: test for seedDrawPlayers
 
-smash750.startDraw();
+usOpen.startDraw();
 // todo: test for startDraw
 
-smash750.draw.matches.forEach((m, i, arr) => {
+usOpen.draw.matches.forEach((m, i, arr) => {
   if (m.playersInRound === 8) {
     m.result = randResult();
   }
 });
 
-smash750.draw.matches.forEach((m, i, arr) => {
+usOpen.draw.matches.forEach((m, i, arr) => {
   if (m.playersInRound === 4) {
     m.result = randResult();
   }
 });
 
-smash750.draw.matches.forEach((m, i, arr) => {
+usOpen.draw.matches.forEach((m, i, arr) => {
   if (m.playersInRound === 2) {
     m.result = randResult();
   }
 });
 
-smash750.createTournamentResult();
-// console.log(smash750.players);
+usOpen.createTournamentResult();
+console.log(usOpen.players);
 stats();

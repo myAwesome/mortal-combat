@@ -3,7 +3,6 @@ const { ChampionshipPlayer, groupNames } = require("./ChampionshipPlayer");
 const { Group } = require("./Group");
 const { GroupPlayer, PlayOffPlayer } = require("./Player");
 const { Draw } = require("./Draw");
-const { calculateDrawCapacity } = require("../builders/play_off");
 const { isOdd } = require("./util");
 
 class Championship {
@@ -108,7 +107,7 @@ class Championship {
 
   createDraw = () => {
     const qualifiers = this.hasGroups ? this.groupsLength * 2 : this.capacity;
-    this.draw = new Draw(calculateDrawCapacity(qualifiers), this);
+    this.draw = new Draw(this.calculateDrawCapacity(qualifiers), this);
     this.draw.createMatches(this.draw.capacity);
     this.draw.qualifiers = qualifiers;
     this.draw.placesPriority = Draw.calcPlacesPriority(this.draw.capacity);
@@ -167,5 +166,8 @@ class Championship {
       return a.points < b.points ? 1 : -1;
     });
   };
+
+  calculateDrawCapacity = (players) =>
+    Math.pow(2, Math.ceil(Math.log2(players)));
 }
 exports.Championship = Championship;

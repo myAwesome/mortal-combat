@@ -18,9 +18,5 @@
         ';
 
         return $conn->fetchAll($sql);
-
     }
-
  **/
-
-console.log('ranking');
