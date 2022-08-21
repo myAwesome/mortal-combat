@@ -1,10 +1,33 @@
-// todo: move groupNames
-const { ChampionshipPlayer, groupNames } = require("./ChampionshipPlayer");
+const { ChampionshipPlayer } = require("./ChampionshipPlayer");
 const { Group } = require("./Group");
 const { GroupPlayer, PlayOffPlayer } = require("./Player");
 const { Draw } = require("./Draw");
-const { isOdd } = require("./util");
-
+const { isOdd } = require("../../utils/util");
+const groupNames = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "Q",
+  "R",
+  "S",
+  "T",
+  "V",
+  "X",
+  "Y",
+  "Z",
+];
 class Championship {
   name;
   capacity;

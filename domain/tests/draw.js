@@ -1,5 +1,5 @@
 const { Draw } = require("../models/Draw");
-const { strictEqual, stats } = require("../models/util");
+const { strictEqual, stats } = require("../../utils/util");
 
 /** Draw  **/
 const draw8 = new Draw(8);

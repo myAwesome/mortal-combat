@@ -1,5 +1,3 @@
-const { Player } = require("./Player");
-
 const setResults = [
   "7-6",
   "7-5",
@@ -15,29 +13,6 @@ const setResults = [
   "2-6",
   "1-6",
   "0-6",
-];
-
-const players = [
-  new Player("Roger Federer"),
-  new Player("Rafael Nadal"),
-  new Player("Novak Djokovic"),
-  new Player("Andy Murray"),
-  new Player("Juan Martin del Potro"),
-  new Player("Andy Roddick"),
-  new Player("Robin Soderling"),
-  new Player("Jo-Wilfried Tsonga"),
-  new Player("Marin Cilic"),
-  new Player("Fernando Verdasco"),
-  new Player("Fernando Gonzalez"),
-  new Player("Gael Monfils"),
-  new Player("Gilles Simon"),
-  new Player("David Ferrer"),
-  new Player("Lleyton Hewitt"),
-  new Player("Stan Wawrinka"),
-  new Player("Tommy Robredo"),
-  new Player("Juan Carlos Ferrero"),
-  new Player("Tomas Berdych"),
-  new Player("David Nalbandian"),
 ];
 
 const DRAW_MAP = {
@@ -72,7 +47,6 @@ module.exports = {
   points,
   groupPoints,
   DRAW_MAP,
-  players,
   fakeResults: setResults,
   randResult,
 };

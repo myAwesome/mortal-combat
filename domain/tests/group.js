@@ -1,4 +1,4 @@
-const { strictEqual, throws, stats, offTests } = require("../models/util");
+const { strictEqual, throws, stats, offTests } = require("../../utils/util");
 const { Group } = require("../models/Group");
 const { Player, GroupPlayer } = require("../models/Player");
 

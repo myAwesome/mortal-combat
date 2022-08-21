@@ -1,6 +1,6 @@
 const { Player, GroupPlayer, PlayOffPlayer } = require("../models/Player");
 const { Match, GroupMatch, PlayOffMatch } = require("../models/Match");
-const { strictEqual, stats } = require("../models/util");
+const { strictEqual, stats } = require("../../utils/util");
 const { Draw } = require("../models/Draw");
 
 /** Match  **/

@@ -1,7 +1,30 @@
-const { strictEqual, stats, offTests } = require("../models/util");
+const { strictEqual, stats, offTests } = require("../../utils/util");
 const { Championship } = require("../models/Championship");
-const { players, randResult, points, groupPoints } = require("../models/mocks");
-// const util = require("util");
+const { randResult, points, groupPoints } = require("../models/mocks");
+const { Player } = require("../models/Player");
+
+const players = [
+  new Player("Roger Federer"),
+  new Player("Rafael Nadal"),
+  new Player("Novak Djokovic"),
+  new Player("Andy Murray"),
+  new Player("Juan Martin del Potro"),
+  new Player("Andy Roddick"),
+  new Player("Robin Soderling"),
+  new Player("Jo-Wilfried Tsonga"),
+  new Player("Marin Cilic"),
+  new Player("Fernando Verdasco"),
+  new Player("Fernando Gonzalez"),
+  new Player("Gael Monfils"),
+  new Player("Gilles Simon"),
+  new Player("David Ferrer"),
+  new Player("Lleyton Hewitt"),
+  new Player("Stan Wawrinka"),
+  new Player("Tommy Robredo"),
+  new Player("Juan Carlos Ferrero"),
+  new Player("Tomas Berdych"),
+  new Player("David Nalbandian"),
+];
 
 // offTests();
 
@@ -65,6 +88,7 @@ usOpen.seedDrawPlayers();
 usOpen.startDraw();
 // todo: test for startDraw
 
+//todo: weak approach
 usOpen.draw.matches.forEach((m, i, arr) => {
   if (m.playersInRound === 8) {
     m.result = randResult();
@@ -84,5 +108,4 @@ usOpen.draw.matches.forEach((m, i, arr) => {
 });
 
 usOpen.createTournamentResult();
-console.log(usOpen.players);
 stats();
