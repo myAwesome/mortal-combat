@@ -39,7 +39,7 @@ const players = [
 const liguePlayers = players.map((p) => new LiguePlayer(p));
 
 const champs = [];
-champs.push(new Championship("January", 11));
+champs.push(new Championship("January", 16));
 champs.push(new Championship("February", 12));
 champs.push(new Championship("March", 10));
 champs.push(new Championship("April", 12));
@@ -47,13 +47,10 @@ champs.push(new Championship("May", 12));
 champs.push(new Championship("June", 9));
 champs.push(new Championship("July", 12));
 champs.push(new Championship("August", 12));
-champs.push(new Championship("September", 9));
+champs.push(new Championship("September", 16));
 champs.push(new Championship("October", 12));
 champs.push(new Championship("November", 12));
 champs.push(new Championship("December", 9));
-
-// todo: fix
-// champs.push(new Championship("Christmas 16", 16));
 
 const shufflePlayers = (players, capacity) => {
   return [...players].sort(() => 0.5 - Math.random()).slice(0, capacity);
@@ -84,6 +81,12 @@ for (let c of champs) {
   c.prepareQualifiersForDraw();
   c.seedDrawPlayers();
   c.startDraw();
+
+  c.draw.matches.forEach((m) => {
+    if (m.playersInRound === 16) {
+      m.result = randResult();
+    }
+  });
 
   c.draw.matches.forEach((m) => {
     if (m.playersInRound === 8) {

@@ -37,8 +37,8 @@ const points = {
 const groupPoints = {
   1: 0,
   2: 0,
-  3: 180,
-  4: 90,
+  3: 90,
+  4: 45,
 };
 const randResult = () =>
   setResults[Math.floor(Math.random() * setResults.length)];

@@ -89,19 +89,19 @@ usOpen.startDraw();
 // todo: test for startDraw
 
 //todo: weak approach
-usOpen.draw.matches.forEach((m, i, arr) => {
+usOpen.draw.matches.forEach((m) => {
   if (m.playersInRound === 8) {
     m.result = randResult();
   }
 });
 
-usOpen.draw.matches.forEach((m, i, arr) => {
+usOpen.draw.matches.forEach((m) => {
   if (m.playersInRound === 4) {
     m.result = randResult();
   }
 });
 
-usOpen.draw.matches.forEach((m, i, arr) => {
+usOpen.draw.matches.forEach((m) => {
   if (m.playersInRound === 2) {
     m.result = randResult();
   }
