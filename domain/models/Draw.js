@@ -10,6 +10,7 @@ class Draw {
   matches;
   completedMatches;
   champ;
+
   constructor(capacity, champ = null) {
     this.capacity = capacity;
     this.champ = champ;
@@ -17,136 +18,114 @@ class Draw {
     this.completedMatches = 0;
   }
 
-  createMatches = (capacity) => {
-    const findMatch = (id) => this.matches.get(id);
-    const getMatchId = (m) =>
+  // Match ID utilities
+  getMatchId = (m) =>
       `p${m.prize}-s${DRAW_MAP[m.playersInRound]}-n${m.matchNumberInRound}`;
-    const getNextMatchIdForWinner = (m) =>
-      getMatchId({
-        prize: m.prize,
-        playersInRound: m.playersInRound / 2,
-        matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
-      });
 
-    const getPrizeForLooser = (m) => m.prize + m.playersInRound / 2;
-    const getNextMatchIdForLooser = (m) =>
-      getMatchId({
-        prize: getPrizeForLooser(m),
-        playersInRound: m.playersInRound / 2,
-        matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
-      });
+  getNextMatchId = (m, isWinner) => {
+    const prize = isWinner ? m.prize : this.getPrizeForLooser(m);
+    return this.getMatchId({
+      prize,
+      playersInRound: m.playersInRound / 2,
+      matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
+    });
+  };
 
-    const createNextMatch = (m, isWinner) => {
-      const prize = isWinner ? m.prize : getPrizeForLooser(m);
-      // todo: PlayOffMatch
-      const currentMatch = new PlayOffMatch({
-        prize,
-        stage: DRAW_MAP[m.playersInRound / 2],
-        matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
-        playersInRound: m.playersInRound / 2,
-        draw: this,
-      });
+  getPrizeForLooser = (m) => m.prize + m.playersInRound / 2;
 
-      currentMatch.id = getMatchId(currentMatch);
-
-      if (currentMatch.playersInRound > 2) {
-        const nextMatchWinnerId = getNextMatchIdForWinner(currentMatch);
-        if (!findMatch(nextMatchWinnerId)) {
-          this.matches.set(
-            nextMatchWinnerId,
-            createNextMatchForWinner(currentMatch)
-          );
-        }
-        currentMatch.nextMatchForWinner = this.matches.get(nextMatchWinnerId);
-
-        const nextMatchLooserId = getNextMatchIdForLooser(currentMatch);
-        if (!findMatch(nextMatchLooserId)) {
-          this.matches.set(
-            nextMatchLooserId,
-            createNextMatchForLooser(currentMatch)
-          );
-        }
-        currentMatch.nextMatchForLooser = this.matches.get(nextMatchLooserId);
-      }
-      return currentMatch;
-    };
-
-    const createNextMatchForWinner = (m) => {
-      return createNextMatch(m, true);
-    };
-
-    const createNextMatchForLooser = (m) => {
-      return createNextMatch(m, false);
-    };
-
-    // creating FIRST round matches
-    for (let i = 1; i < capacity / 2 + 1; i++) {
-      const mockedPrevMatch = new PlayOffMatch({
-        prize: 1,
-        stage: DRAW_MAP[capacity * 2],
-        matchNumberInRound: i * 2,
-        playersInRound: capacity * 2,
-      });
-
-      const currentMatch = createNextMatch(mockedPrevMatch, true);
-      currentMatch.id = getMatchId(currentMatch);
-      this.matches.set(currentMatch.id, currentMatch);
+  createMatches = (capacity) => {
+    // Creates and assigns matches for the first round
+    for (let i = 1; i <= capacity / 2; i++) {
+      const initialMatch = this.createMockedMatch(capacity, i);
+      const nextMatch = this.createNextMatch(initialMatch, true);
+      nextMatch.id = this.getMatchId(nextMatch);
+      this.matches.set(nextMatch.id, nextMatch);
     }
   };
 
+  createMockedMatch = (capacity, matchNum) => {
+    return new PlayOffMatch({
+      prize: 1,
+      stage: DRAW_MAP[capacity * 2],
+      matchNumberInRound: matchNum * 2,
+      playersInRound: capacity * 2,
+    });
+  };
+
+  // Recursively creates and links matches for winners and losers
+  createNextMatch = (m, isWinner) => {
+    const prize = isWinner ? m.prize : this.getPrizeForLooser(m);
+    const currentMatch = new PlayOffMatch({
+      prize,
+      stage: DRAW_MAP[m.playersInRound / 2],
+      matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
+      playersInRound: m.playersInRound / 2,
+      draw: this,
+    });
+
+    currentMatch.id = this.getMatchId(currentMatch);
+
+    if (currentMatch.playersInRound > 2) {
+      this.assignNextMatches(currentMatch);
+    }
+    return currentMatch;
+  };
+
+  assignNextMatches = (match) => {
+    // Creates the next match for the winner
+    const nextWinnerId = this.getNextMatchId(match, true);
+    if (!this.matches.has(nextWinnerId)) {
+      this.matches.set(nextWinnerId, this.createNextMatch(match, true));
+    }
+    match.nextMatchForWinner = this.matches.get(nextWinnerId);
+
+    // Creates the next match for the looser
+    const nextLooserId = this.getNextMatchId(match, false);
+    if (!this.matches.has(nextLooserId)) {
+      this.matches.set(nextLooserId, this.createNextMatch(match, false));
+    }
+    match.nextMatchForLooser = this.matches.get(nextLooserId);
+  };
+
   static calcPlacesPriority = (capacity) => {
-    const places = [...Array(capacity).keys()].map((i) => i + 1);
-    const splitedPlaces = [];
+    const places = Array.from({ length: capacity }, (_, i) => i + 1);
+    const splitGroups = [];
     const seedPlaces = [];
 
-    // todo: оптимізувати/ зробити хоч якось читаємим
-    const rf = (list) => {
+    const splitAndCollect = (list) => {
       if (list.length <= 2) return;
-      splitedPlaces.push([...list]);
-      const middleIndex = Math.ceil(list.length / 2);
-      const firstHalf = list.splice(0, middleIndex);
-      const secondHalf = list.splice(-middleIndex);
-      rf(firstHalf);
-      rf(secondHalf);
+      splitGroups.push([...list]);
+      const mid = Math.ceil(list.length / 2);
+      const firstHalf = list.splice(0, mid);
+      const secondHalf = list.splice(-mid);
+      splitAndCollect(firstHalf);
+      splitAndCollect(secondHalf);
     };
 
-    rf(places);
-    splitedPlaces.sort((b, a) => {
-      if (a.length > b.length) {
-        return 1;
-      }
-      if (a.length < b.length) {
-        return -1;
-      }
-      return 0;
+    splitAndCollect(places);
+    splitGroups.sort((a, b) => b.length - a.length);
+
+    splitGroups.forEach((group) => {
+      seedPlaces.push(group[0]);
+      seedPlaces.push(group[group.length - 1]);
     });
 
-    splitedPlaces.forEach((el) => {
-      if (!seedPlaces.includes(el[0])) {
-        seedPlaces.push(el[0]);
-      }
-      if (!seedPlaces.includes(el[el.length - 1])) {
-        seedPlaces.push(el[el.length - 1]);
-      }
-    });
-
-    const placesPriority = [...seedPlaces];
-    for (let i = seedPlaces.length - 1; i >= 0; i--) {
-      placesPriority.push(
-        isOdd(seedPlaces[i]) ? seedPlaces[i] + 1 : seedPlaces[i] - 1
-      );
-    }
+    const placesPriority = [...new Set(seedPlaces)];
+    placesPriority.push(
+        ...placesPriority.map((place) =>
+            isOdd(place) ? place + 1 : place - 1
+        ).reverse()
+    );
 
     return placesPriority;
   };
 
   addCompletedMatch = () => {
     this.completedMatches++;
-    if (this.completedMatches === this.matches.size) {
-      if (this.champ) {
-        this.champ.onCompletedDraw();
-      }
+    if (this.completedMatches === this.matches.size && this.champ) {
+      this.champ.onCompletedDraw();
     }
   };
 }
+
 module.exports = { Draw };
