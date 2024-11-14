@@ -32,8 +32,8 @@ const shufflePlayers = (players, capacity) => {
   return [...players].sort(() => 0.5 - Math.random()).slice(0, capacity);
 };
 
-const usOpen = new Championship("Smash 750", 9);
-strictEqual(usOpen.name, "Smash 750");
+const usOpen = new Championship("Us Open 2008", 9);
+strictEqual(usOpen.name, "Us Open 2008");
 strictEqual(usOpen.capacity, 9);
 usOpen.points = points;
 usOpen.groupPoints = groupPoints;

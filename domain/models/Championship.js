@@ -3,45 +3,14 @@ const { Group } = require("./Group");
 const { GroupPlayer, PlayOffPlayer } = require("./Player");
 const { Draw } = require("./Draw");
 const { isOdd } = require("../../utils/util");
-const groupNames = [
-  "A",
-  "B",
-  "C",
-  "D",
-  "E",
-  "F",
-  "G",
-  "H",
-  "I",
-  "K",
-  "L",
-  "M",
-  "N",
-  "O",
-  "P",
-  "Q",
-  "R",
-  "S",
-  "T",
-  "V",
-  "X",
-  "Y",
-  "Z",
-];
-class Championship {
-  name;
-  capacity;
-  hasGroups;
-  draw;
-  groups;
-  groupsLength;
-  points;
-  groupPoints;
-  players;
-  joinedGroupsResult;
-  qualifiersAndBye;
-  drawPlayersWithLocation;
 
+const groupNames = [
+  "A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "L", "M",
+  "N", "O", "P", "Q", "R", "S", "T", "V", "X", "Y", "Z"
+];
+const BYE_PLAYER_NAME = "bye";
+
+class Championship {
   constructor(name, capacity, hasGroups = true) {
     this.name = name;
     this.capacity = capacity;
@@ -51,78 +20,67 @@ class Championship {
     this.drawPlayersWithLocation = [];
     return this;
   }
+
+  // Getters and Setters
   get entryList() {
     return this.players;
   }
+
   set entryList(players) {
-    this.players = players.map((player) => new ChampionshipPlayer(player));
+    this.players = players.map(player => new ChampionshipPlayer(player));
   }
 
-  /** Create Groups using players from entryList **/
-  createGroups = (optimal = 3, entryList = this.entryList) => {
-    const groupAmount = Math.floor(entryList.length / optimal);
-    const groups = [];
+  // Group Creation and Initialization
+  createGroups = (optimalGroupSize = 3, entryList = this.entryList) => {
+    const groupAmount = Math.floor(entryList.length / optimalGroupSize);
+    this.groups = Array.from({ length: groupAmount }, (_, index) => new Group(groupNames[index]));
 
     entryList.forEach((championshipPlayer, index) => {
-      const gIndex = index % groupAmount;
-      if (!groups[gIndex]) {
-        groups[gIndex] = new Group(groupNames[gIndex]);
-      }
-      groups[gIndex].capacity++;
-      groups[gIndex].addPlayer(new GroupPlayer(championshipPlayer.player));
+      const group = this.groups[index % groupAmount];
+      group.capacity++;
+      group.addPlayer(new GroupPlayer(championshipPlayer.player));
     });
-    this.groups = groups;
-    this.groupsLength = this.groups.length;
 
-    this.groups.forEach((g) => g.createMatches());
+    this.groupsLength = this.groups.length;
+    this.groups.forEach(group => group.createMatches());
   };
 
+  // Point Assignment
   addPointsAccordingToPlace = () => {
-    this.groups.forEach((g) => {
-      g.players.forEach((p) => {
-        const playerInChamp = this.players.find((cp) => cp.player === p.player);
-        playerInChamp.points = this.groupPoints[p.groupMetadata.place];
+    this.groups.forEach(group => {
+      group.players.forEach(player => {
+        const championshipPlayer = this.players.find(cp => cp.player === player.player);
+        if (championshipPlayer) {
+          championshipPlayer.points = this.groupPoints[player.groupMetadata.place];
+        }
       });
     });
   };
 
+  // Qualifier Preparation
   prepareQualifiersForDraw = () => {
+    const byes = Array(this.draw.emptySlots).fill({ player: { name: BYE_PLAYER_NAME } });
     this.qualifiersAndBye = [
       ...this.joinedGroupsResult.slice(0, this.draw.qualifiers),
-      ...[...Array(this.draw.emptySlots).keys()].map((i) => ({
-        player: { name: "bye" },
-      })),
+      ...byes,
     ];
   };
 
   seedDrawPlayers = () => {
-    for (let qualifierIndex in this.qualifiersAndBye) {
-      this.drawPlayersWithLocation.push({
-        player: this.qualifiersAndBye[qualifierIndex].player,
-        location: this.draw.placesPriority[qualifierIndex],
-      });
-    }
-
-    this.drawPlayersWithLocation.sort((a, b) => {
-      return a.location > b.location ? 1 : -1;
-    });
+    this.drawPlayersWithLocation = this.qualifiersAndBye.map((qualifier, index) => ({
+      player: qualifier.player,
+      location: this.draw.placesPriority[index],
+    })).sort((a, b) => a.location - b.location);
   };
 
   createJoinedGroupsResult = (groups) => {
+    const maxGroupCapacity = Math.max(...groups.map(group => group.players.length));
     const result = [];
-    const maxGroupCapacity = groups.reduce((prev, curr) => {
-      return prev < curr.players.length ? curr.players.length : prev;
-    }, 0);
 
     for (let i = 0; i < maxGroupCapacity; i++) {
-      const joinedGroupsResult = [];
-      for (let g of groups) {
-        if (g.players[i]) {
-          joinedGroupsResult.push(g.players[i]);
-        }
-      }
-      joinedGroupsResult.sort(Group.orderPlaces);
-      result.push(...joinedGroupsResult);
+      const groupStagePlayers = groups.map(group => group.players[i]).filter(Boolean);
+      groupStagePlayers.sort(Group.orderPlaces);
+      result.push(...groupStagePlayers);
     }
 
     return result;
@@ -138,59 +96,50 @@ class Championship {
   };
 
   startDraw = () => {
-    this.drawPlayersWithLocation.forEach((p) => {
-      const isBye = p.player.name === "bye";
-      const mNumberForPlayer = Math.ceil(p.location / 2);
-      this.draw.matches.forEach((m, i, arr) => {
-        if (
-          m.playersInRound === this.drawPlayersWithLocation.length &&
-          m.matchNumberInRound === mNumberForPlayer
-        ) {
-          isOdd(p.location)
-            ? (m.player1 = new PlayOffPlayer(p.player, isBye))
-            : (m.player2 = new PlayOffPlayer(p.player, isBye));
+    this.drawPlayersWithLocation.forEach(playerLocation => {
+      const matchNumber = Math.ceil(playerLocation.location / 2);
+      const isBye = playerLocation.player.name === BYE_PLAYER_NAME;
+
+      this.draw.matches.forEach(match => {
+        if (match.playersInRound === this.drawPlayersWithLocation.length && match.matchNumberInRound === matchNumber) {
+          isOdd(playerLocation.location)
+              ? (match.player1 = new PlayOffPlayer(playerLocation.player, isBye))
+              : (match.player2 = new PlayOffPlayer(playerLocation.player, isBye));
         }
       });
     });
   };
 
-  // add points for result
   onCompletedDraw = () => {
     let stage = this.draw.capacity;
+
     while (stage > 1) {
-      this.draw.matches.forEach((m) => {
-        if (m.playersInRound === stage && m.prize === 1) {
-          if (m.looser.player) {
-            const playerInChamp = this.players.find((cp) => {
-              return cp.player === m.looser.player;
-            });
-            if (playerInChamp) {
-              playerInChamp.points = this.points[stage];
-            }
-          }
-          if (stage === 2) {
-            if (m.winner.player) {
-              const playerInChamp = this.players.find((cp) => {
-                return cp.player === m.winner.player;
-              });
-              if (playerInChamp) {
-                playerInChamp.points = this.points[1];
-              }
-            }
-          }
+      this.draw.matches.forEach(match => {
+        if (match.playersInRound === stage && match.prize === 1) {
+          this.awardPoints(match, stage);
         }
       });
-      stage = stage / 2;
+      stage /= 2;
     }
   };
 
-  createTournamentResult = () => {
-    this.players.sort((a, b) => {
-      return a.points < b.points ? 1 : -1;
-    });
+  awardPoints = (match, stage) => {
+    const awardPointsToPlayer = (player, stagePoints) => {
+      const championshipPlayer = this.players.find(cp => cp.player === player);
+      if (championshipPlayer) {
+        championshipPlayer.points = stagePoints;
+      }
+    };
+
+    if (match.looser?.player) awardPointsToPlayer(match.looser.player, this.points[stage]);
+    if (stage === 2 && match.winner?.player) awardPointsToPlayer(match.winner.player, this.points[1]);
   };
 
-  calculateDrawCapacity = (players) =>
-    Math.pow(2, Math.ceil(Math.log2(players)));
+  createTournamentResult = () => {
+    this.players.sort((a, b) => b.points - a.points);
+  };
+
+  calculateDrawCapacity = (players) => Math.pow(2, Math.ceil(Math.log2(players)));
 }
+
 exports.Championship = Championship;
