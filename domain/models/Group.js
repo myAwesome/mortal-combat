@@ -1,4 +1,4 @@
-const { GroupMatch } = require("./Match");
+const { GroupMatch } = require("./GroupMatch");
 
 class Group {
   name;

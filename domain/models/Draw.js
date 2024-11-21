@@ -1,6 +1,6 @@
 const { DRAW_MAP } = require("./mocks");
 const { isOdd } = require("../../utils/util");
-const { PlayOffMatch } = require("./Match");
+const { PlayOffMatch } = require("./PlayOffMatch");
 
 class Draw {
   capacity;

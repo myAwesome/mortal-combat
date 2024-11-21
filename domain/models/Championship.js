@@ -1,6 +1,7 @@
 const { ChampionshipPlayer } = require("./ChampionshipPlayer");
 const { Group } = require("./Group");
-const { GroupPlayer, PlayOffPlayer } = require("./Player");
+const { GroupPlayer } = require("./GroupPlayer");
+const { PlayOffPlayer } = require("./PlayOffPlayer");
 const { Draw } = require("./Draw");
 const { isOdd } = require("../../utils/util");
 

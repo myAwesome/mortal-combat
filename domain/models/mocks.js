@@ -14,7 +14,6 @@ const setResults = [
   "1-6",
   "0-6",
 ];
-
 const DRAW_MAP = {
   2: "Final",
   4: "Semi-Final",
@@ -24,7 +23,6 @@ const DRAW_MAP = {
   64: "Last 64",
   128: "Last 128",
 };
-
 const points = {
   1: 2000,
   2: 1200,

@@ -1,56 +1,43 @@
+console.log(`\n SEASON TEST \n`)
+
 const { stats } = require("../../utils/util");
 const { Player } = require("../models/Player");
 const { LiguePlayer } = require("../models/LiguePlayer");
 const { Championship } = require("../models/Championship");
 const { points, groupPoints, randResult } = require("../models/mocks");
+// Create players
 const players = [
-  new Player("Roger Federer"),
-  new Player("Rafael Nadal"),
-  new Player("Novak Djokovic"),
-  new Player("Andy Murray"),
-  new Player("Juan Martin del Potro"),
-  new Player("Andy Roddick"),
-  new Player("Robin Soderling"),
-  new Player("Jo-Wilfried Tsonga"),
-  new Player("Marin Cilic"),
-  new Player("Fernando Verdasco"),
-  new Player("Fernando Gonzalez"),
-  new Player("Gael Monfils"),
-  new Player("Gilles Simon"),
-  new Player("David Ferrer"),
-  new Player("Lleyton Hewitt"),
-  new Player("Stan Wawrinka"),
-  new Player("Tommy Robredo"),
-  new Player("Juan Carlos Ferrero"),
-  new Player("Tomas Berdych"),
-  new Player("David Nalbandian"),
-  new Player("Markos Baghdatis"),
-  new Player("Grigor Dimitrov"),
-  new Player("Kei Nishikori"),
-  new Player("Nick Kirgios"),
-  new Player("Dominik Thiem"),
-  new Player("Marat Safin"),
-  new Player("Fabio Fognini"),
-  new Player("James Blake"),
-  new Player("Alex Dolgopolov"),
-  new Player("Juan Monaco"),
+  "Roger Federer", "Rafael Nadal", "Novak Djokovic", "Andy Murray",
+  "Juan Martin del Potro", "Andy Roddick", "Robin Soderling",
+  "Jo-Wilfried Tsonga", "Marin Cilic", "Fernando Verdasco",
+  "Fernando Gonzalez", "Gael Monfils", "Gilles Simon",
+  "David Ferrer", "Lleyton Hewitt", "Stan Wawrinka",
+  "Tommy Robredo", "Juan Carlos Ferrero", "Tomas Berdych",
+  "David Nalbandian", "Markos Baghdatis", "Grigor Dimitrov",
+  "Kei Nishikori", "Nick Kirgios", "Dominik Thiem",
+  "Marat Safin", "Fabio Fognini", "James Blake",
+  "Alex Dolgopolov", "Juan Monaco"
+].map(name => new Player(name));
+
+const liguePlayers = players.map(player => new LiguePlayer(player));
+
+// Create championships
+const championshipConfigs = [
+  { name: "January", capacity: 16 },
+  { name: "February", capacity: 12 },
+  { name: "March", capacity: 10 },
+  { name: "April", capacity: 12 },
+  { name: "May", capacity: 12 },
+  { name: "June", capacity: 9 },
+  { name: "July", capacity: 12 },
+  { name: "August", capacity: 12 },
+  { name: "September", capacity: 16 },
+  { name: "October", capacity: 12 },
+  { name: "November", capacity: 12 },
+  { name: "December", capacity: 9 }
 ];
+const champs = championshipConfigs.map(cfg => new Championship(cfg.name, cfg.capacity));
 
-const liguePlayers = players.map((p) => new LiguePlayer(p));
-
-const champs = [];
-champs.push(new Championship("January", 16));
-champs.push(new Championship("February", 12));
-champs.push(new Championship("March", 10));
-champs.push(new Championship("April", 12));
-champs.push(new Championship("May", 12));
-champs.push(new Championship("June", 9));
-champs.push(new Championship("July", 12));
-champs.push(new Championship("August", 12));
-champs.push(new Championship("September", 16));
-champs.push(new Championship("October", 12));
-champs.push(new Championship("November", 12));
-champs.push(new Championship("December", 9));
 
 const shufflePlayers = (players, capacity) => {
   return [...players].sort(() => 0.5 - Math.random()).slice(0, capacity);
@@ -120,7 +107,8 @@ liguePlayers.sort((a, b) => {
 
 console.log("");
 let place = 0;
-console.log("Single Ranking");
+console.log(`\n Single Ranking \n`)
+
 console.log("");
 for (let lp of liguePlayers) {
   console.log(

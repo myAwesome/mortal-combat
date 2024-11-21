@@ -1,6 +1,7 @@
 const { strictEqual, throws, stats, offTests } = require("../../utils/util");
 const { Group } = require("../models/Group");
-const { Player, GroupPlayer } = require("../models/Player");
+const { Player} = require("../models/Player");
+const { GroupPlayer} = require("../models/GroupPlayer");
 
 const groupA = new Group("A");
 groupA.capacity = 3;
