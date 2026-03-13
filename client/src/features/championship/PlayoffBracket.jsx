@@ -4,12 +4,14 @@ import './PlayoffBracket.css'
 
 export default function PlayoffBracket({ draw, champId, onDone }) {
   const rounds = buildBracket(draw.matches)
+  const thirdPlaceMatch = draw.matches.find((m) => m.prize > 1 && m.playersInRound === 2)
 
   if (rounds.length === 0) {
     return <p style={{ color: 'var(--color-text-muted)' }}>No bracket matches found.</p>
   }
 
   return (
+    <div>
     <div className="bracket">
       {rounds.map((round, roundIdx) => (
         <div key={round.label} style={{ display: 'flex', alignItems: 'stretch' }}>
@@ -38,6 +40,13 @@ export default function PlayoffBracket({ draw, champId, onDone }) {
           )}
         </div>
       ))}
+    </div>
+    {thirdPlaceMatch && (
+      <div style={{ marginTop: '1.5rem' }}>
+        <div className="bracket-round-header" style={{ marginBottom: '0.5rem' }}>3rd Place</div>
+        <BracketMatch match={thirdPlaceMatch} champId={champId} onDone={onDone} />
+      </div>
+    )}
     </div>
   )
 }
