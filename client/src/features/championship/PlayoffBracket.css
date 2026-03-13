@@ -1,0 +1,135 @@
+.bracket {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  overflow-x: auto;
+  padding: 1rem 0 1.5rem;
+  gap: 0;
+}
+
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex-shrink: 0;
+}
+
+.bracket-round-header {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  padding: 0 1rem 0.75rem;
+  white-space: nowrap;
+}
+
+.bracket-match-slot {
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  flex: 1;
+  position: relative;
+}
+
+.bracket-match {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  width: 170px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.bracket-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.82rem;
+  min-height: 36px;
+}
+
+.bracket-player-row:last-child {
+  border-bottom: none;
+}
+
+.bracket-player-row.winner {
+  background: var(--color-primary-light);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.bracket-player-row.bye {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.bracket-player-row.empty {
+  color: var(--color-text-muted);
+}
+
+.bracket-score {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-left: 0.4rem;
+  white-space: nowrap;
+}
+
+/* Connector lines between rounds */
+.bracket-connector {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.connector-top,
+.connector-bottom {
+  flex: 1;
+  border-right: 2px solid var(--color-border);
+}
+
+.connector-top {
+  border-bottom: 2px solid var(--color-border);
+  border-bottom-right-radius: 6px;
+}
+
+.connector-bottom {
+  border-top: 2px solid var(--color-border);
+  border-top-right-radius: 6px;
+}
+
+.connector-mid {
+  height: 2px;
+  width: 16px;
+  background: var(--color-border);
+}
+
+.bracket-result-form {
+  padding: 0.35rem 0.5rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.bracket-result-form input {
+  width: 56px;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.4rem;
+}
+
+.bracket-result-form button {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.bracket-result-error {
+  font-size: 0.7rem;
+  color: var(--color-danger);
+}
