@@ -27,7 +27,7 @@ class Match {
   }
 
   updateMetadataAfterMatch = () => {
-    console.log("abstract");
+    // console.log("abstract");
   };
 
   set result(result) {
