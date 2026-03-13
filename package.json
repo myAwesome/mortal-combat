@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "test": "jest",
-    "start": "node server/app.js"
+    "start": "node --env-file=.env server/app.js"
   },
   "dependencies": {
     "express": "^4.18.2",
