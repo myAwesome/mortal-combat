@@ -1,4 +1,3 @@
-const { strictEqual, stats, offTests } = require("../../utils/util");
 const { Championship } = require("../models/Championship");
 const { randResult, points, groupPoints } = require("../models/mocks");
 const { Player } = require("../models/Player");
@@ -26,86 +25,112 @@ const players = [
   new Player("David Nalbandian"),
 ];
 
-// offTests();
-
 const shufflePlayers = (players, capacity) => {
   return [...players].sort(() => 0.5 - Math.random()).slice(0, capacity);
 };
 
-const usOpen = new Championship("Us Open 2008", 9);
-strictEqual(usOpen.name, "Us Open 2008");
-strictEqual(usOpen.capacity, 9);
-usOpen.points = points;
-usOpen.groupPoints = groupPoints;
+describe("Championship", () => {
+  let usOpen;
+  let shuffledPlayers;
 
-const shuffledPlayers = shufflePlayers(players, usOpen.capacity);
-usOpen.entryList = shuffledPlayers;
-strictEqual(usOpen.players.length, shuffledPlayers.length);
+  beforeEach(() => {
+    usOpen = new Championship("Us Open 2008", 9);
+    usOpen.points = points;
+    usOpen.groupPoints = groupPoints;
+    shuffledPlayers = shufflePlayers(players, usOpen.capacity);
+    usOpen.entryList = shuffledPlayers;
+  });
 
-usOpen.createGroups();
-strictEqual(usOpen.groups.length, 3);
-strictEqual(usOpen.groups[0].name, "A");
+  test("has correct name and capacity", () => {
+    expect(usOpen.name).toBe("Us Open 2008");
+    expect(usOpen.capacity).toBe(9);
+  });
 
-usOpen.createDraw();
+  test("entryList sets players correctly", () => {
+    expect(usOpen.players.length).toBe(shuffledPlayers.length);
+  });
 
-// fill group results
-usOpen.groups.forEach((g) => {
-  g.matches.forEach((m) => {
-    m.result = randResult();
+  test("createGroups creates 3 groups starting with A", () => {
+    usOpen.createGroups();
+    expect(usOpen.groups.length).toBe(3);
+    expect(usOpen.groups[0].name).toBe("A");
+  });
+
+  test("joinedGroupsResult is sorted by place ascending", () => {
+    usOpen.createGroups();
+    usOpen.createDraw();
+
+    usOpen.groups.forEach((g) => {
+      g.matches.forEach((m) => {
+        m.result = randResult();
+      });
+    });
+
+    usOpen.groups.forEach((g) => g.players.sort(g.orderPlaces));
+    usOpen.groups.forEach((g) => g.orderPlayersByPlace());
+    usOpen.addPointsAccordingToPlace();
+
+    usOpen.joinedGroupsResult = usOpen.createJoinedGroupsResult(usOpen.groups);
+
+    expect(usOpen.joinedGroupsResult[0].groupMetadata.place).toBe(1);
+    usOpen.joinedGroupsResult.forEach((p, i, arr) => {
+      if (arr[i + 1]) {
+        expect(p.groupMetadata.place <= arr[i + 1].groupMetadata.place).toBe(true);
+      }
+    });
+  });
+
+  test("prepareQualifiersForDraw adds bye players at the end", () => {
+    usOpen.createGroups();
+    usOpen.createDraw();
+
+    usOpen.groups.forEach((g) => {
+      g.matches.forEach((m) => {
+        m.result = randResult();
+      });
+    });
+
+    usOpen.groups.forEach((g) => g.players.sort(g.orderPlaces));
+    usOpen.groups.forEach((g) => g.orderPlayersByPlace());
+    usOpen.addPointsAccordingToPlace();
+
+    usOpen.joinedGroupsResult = usOpen.createJoinedGroupsResult(usOpen.groups);
+    usOpen.prepareQualifiersForDraw();
+
+    const last = usOpen.qualifiersAndBye.length - 1;
+    expect(usOpen.qualifiersAndBye[last].player.name).toBe("bye");
+    expect(usOpen.qualifiersAndBye[last - 1].player.name).toBe("bye");
+  });
+
+  test("full championship run completes without errors", () => {
+    usOpen.createGroups();
+    usOpen.createDraw();
+
+    usOpen.groups.forEach((g) => {
+      g.matches.forEach((m) => {
+        m.result = randResult();
+      });
+    });
+
+    usOpen.groups.forEach((g) => g.players.sort(g.orderPlaces));
+    usOpen.groups.forEach((g) => g.orderPlayersByPlace());
+    usOpen.addPointsAccordingToPlace();
+
+    usOpen.joinedGroupsResult = usOpen.createJoinedGroupsResult(usOpen.groups);
+    usOpen.prepareQualifiersForDraw();
+    usOpen.seedDrawPlayers();
+    usOpen.startDraw();
+
+    usOpen.draw.matches.forEach((m) => {
+      if (m.playersInRound === 8) m.result = randResult();
+    });
+    usOpen.draw.matches.forEach((m) => {
+      if (m.playersInRound === 4) m.result = randResult();
+    });
+    usOpen.draw.matches.forEach((m) => {
+      if (m.playersInRound === 2) m.result = randResult();
+    });
+
+    expect(() => usOpen.createTournamentResult()).not.toThrow();
   });
 });
-
-// tested in group test
-usOpen.groups.forEach((g) => g.players.sort(g.orderPlaces));
-usOpen.groups.forEach((g) => {
-  g.orderPlayersByPlace();
-});
-
-usOpen.addPointsAccordingToPlace();
-
-usOpen.joinedGroupsResult = usOpen.createJoinedGroupsResult(usOpen.groups);
-
-strictEqual(usOpen.joinedGroupsResult[0].groupMetadata.place, 1);
-usOpen.joinedGroupsResult.forEach((p, i, arr) => {
-  if (arr[i + 1]) {
-    strictEqual(p.groupMetadata.place <= arr[i + 1].groupMetadata.place, true);
-  }
-});
-usOpen.prepareQualifiersForDraw();
-
-strictEqual(
-  usOpen.qualifiersAndBye[usOpen.qualifiersAndBye.length - 1].player.name,
-  "bye"
-);
-strictEqual(
-  usOpen.qualifiersAndBye[usOpen.qualifiersAndBye.length - 2].player.name,
-  "bye"
-);
-
-usOpen.seedDrawPlayers();
-// todo: test for seedDrawPlayers
-
-usOpen.startDraw();
-// todo: test for startDraw
-
-//todo: weak approach
-usOpen.draw.matches.forEach((m) => {
-  if (m.playersInRound === 8) {
-    m.result = randResult();
-  }
-});
-
-usOpen.draw.matches.forEach((m) => {
-  if (m.playersInRound === 4) {
-    m.result = randResult();
-  }
-});
-
-usOpen.draw.matches.forEach((m) => {
-  if (m.playersInRound === 2) {
-    m.result = randResult();
-  }
-});
-
-usOpen.createTournamentResult();
-stats();
