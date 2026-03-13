@@ -13,9 +13,12 @@ class Draw {
 
   constructor(capacity, champ = null) {
     this.capacity = capacity;
-    this.champ = champ;
+    this.qualifiers = null;
+    this.placesPriority = null;
+    this.emptySlots = 0;
     this.matches = new Map();
     this.completedMatches = 0;
+    this.champ = champ;
   }
 
   // Match ID utilities
@@ -23,7 +26,7 @@ class Draw {
       `p${m.prize}-s${DRAW_MAP[m.playersInRound]}-n${m.matchNumberInRound}`;
 
   getNextMatchId = (m, isWinner) => {
-    const prize = isWinner ? m.prize : this.getPrizeForLooser(m);
+    const prize = isWinner ? m.prize : this.getPrizeForLoser(m);
     return this.getMatchId({
       prize,
       playersInRound: m.playersInRound / 2,
@@ -31,7 +34,7 @@ class Draw {
     });
   };
 
-  getPrizeForLooser = (m) => m.prize + m.playersInRound / 2;
+  getPrizeForLoser = (m) => m.prize + m.playersInRound / 2;
 
   createMatches = (capacity) => {
     // Creates and assigns matches for the first round
@@ -54,7 +57,7 @@ class Draw {
 
   // Recursively creates and links matches for winners and losers
   createNextMatch = (m, isWinner) => {
-    const prize = isWinner ? m.prize : this.getPrizeForLooser(m);
+    const prize = isWinner ? m.prize : this.getPrizeForLoser(m);
     const currentMatch = new PlayOffMatch({
       prize,
       stage: DRAW_MAP[m.playersInRound / 2],
@@ -79,12 +82,12 @@ class Draw {
     }
     match.nextMatchForWinner = this.matches.get(nextWinnerId);
 
-    // Creates the next match for the looser
-    const nextLooserId = this.getNextMatchId(match, false);
-    if (!this.matches.has(nextLooserId)) {
-      this.matches.set(nextLooserId, this.createNextMatch(match, false));
+    // Creates the next match for the loser
+    const nextLoserId = this.getNextMatchId(match, false);
+    if (!this.matches.has(nextLoserId)) {
+      this.matches.set(nextLoserId, this.createNextMatch(match, false));
     }
-    match.nextMatchForLooser = this.matches.get(nextLooserId);
+    match.nextMatchForLoser = this.matches.get(nextLoserId);
   };
 
   static calcPlacesPriority = (capacity) => {

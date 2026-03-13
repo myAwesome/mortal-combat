@@ -16,9 +16,15 @@ class Championship {
     this.name = name;
     this.capacity = capacity;
     this.hasGroups = hasGroups;
+    this.players = null;
+    this.points = null;
+    this.groupPoints = null;
     this.groups = [];
+    this.groupsLength = 0;
     this.joinedGroupsResult = [];
+    this.qualifiersAndBye = [];
     this.drawPlayersWithLocation = [];
+    this.draw = null;
     return this;
   }
 
@@ -132,7 +138,7 @@ class Championship {
       }
     };
 
-    if (match.looser?.player) awardPointsToPlayer(match.looser.player, this.points[stage]);
+    if (match.loser?.player) awardPointsToPlayer(match.loser.player, this.points[stage]);
     if (stage === 2 && match.winner?.player) awardPointsToPlayer(match.winner.player, this.points[1]);
   };
 

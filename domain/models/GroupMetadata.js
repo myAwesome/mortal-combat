@@ -9,6 +9,8 @@ class GroupMetadata {
         this.points = 0;
         this.win = 0;
         this.loose = 0;
+        this.place = null;
+        this.group = null;
     }
 }
 

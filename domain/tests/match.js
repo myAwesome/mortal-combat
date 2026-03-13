@@ -20,7 +20,7 @@ const match = new Match({
 });
 match.result = "6-1";
 strictEqual(match.winner, federer);
-strictEqual(match.looser, nadal);
+strictEqual(match.loser, nadal);
 
 console.log(`\n /** GroupMatch  **/\n`)
 
@@ -35,7 +35,7 @@ const groupMatch = new GroupMatch({
 groupMatch.result = "6-1";
 
 strictEqual(groupMatch.winner, gFederer);
-strictEqual(groupMatch.looser, gNadal);
+strictEqual(groupMatch.loser, gNadal);
 strictEqual(gFederer.groupMetadata.win, 6);
 strictEqual(gFederer.groupMetadata.loose, 1);
 strictEqual(gFederer.groupMetadata.points, 1);
@@ -56,7 +56,7 @@ const playOffMatchBye = new PlayOffMatch({
 });
 
 strictEqual(playOffMatchBye.winner, pJo);
-strictEqual(playOffMatchBye.looser, pBye);
+strictEqual(playOffMatchBye.loser, pBye);
 
 console.log(`\n /** PlayOffMatch normal  **/\n`)
 
@@ -65,13 +65,13 @@ const draw2 = new Draw(4);
 
 const pFederer = new PlayOffPlayer(new Player("Federer"));
 const pNadal = new PlayOffPlayer(new Player("Nadal"));
-const nextMatchForLooser = new PlayOffMatch();
+const nextMatchForLoser = new PlayOffMatch();
 const nextMatchForWinner = new PlayOffMatch();
 
 const playOffMatch = new PlayOffMatch({
   player1: pFederer,
   player2: pNadal,
-  nextMatchForLooser,
+  nextMatchForLoser,
   nextMatchForWinner,
   draw: draw2,
 });
@@ -79,9 +79,9 @@ const playOffMatch = new PlayOffMatch({
 playOffMatch.result = "7-5";
 
 strictEqual(playOffMatch.winner, pFederer);
-strictEqual(playOffMatch.looser, pNadal);
+strictEqual(playOffMatch.loser, pNadal);
 
 strictEqual(playOffMatch.nextMatchForWinner.hasPlayer(pFederer.player), true);
-strictEqual(playOffMatch.nextMatchForLooser.hasPlayer(pNadal.player), true);
+strictEqual(playOffMatch.nextMatchForLoser.hasPlayer(pNadal.player), true);
 
 stats();

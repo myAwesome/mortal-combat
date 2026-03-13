@@ -8,23 +8,25 @@ class PlayOffMatch extends Match {
     matchNumberInRound;
     playersInRound;
     nextMatchForWinner;
-    nextMatchForLooser;
+    nextMatchForLoser;
     draw;
     constructor(obj = {}) {
         super(obj);
-        this.prize = obj.prize;
-        this.stage = obj.stage;
-        this.matchNumberInRound = obj.matchNumberInRound;
-        this.playersInRound = obj.playersInRound;
-        this.nextMatchForWinner = obj.nextMatchForWinner;
-        this.nextMatchForLooser = obj.nextMatchForLooser;
-        this.draw = obj.draw;
+        this.id = obj.id ?? null;
+        this.prize = obj.prize ?? null;
+        this.stage = obj.stage ?? null;
+        this.matchNumberInRound = obj.matchNumberInRound ?? null;
+        this.playersInRound = obj.playersInRound ?? null;
+        this.nextMatchForWinner = obj.nextMatchForWinner ?? null;
+        this.nextMatchForLoser = obj.nextMatchForLoser ?? null;
+        this.draw = obj.draw ?? null;
 
         if (
             (this.player1 && this.player1.isBye) ||
             (this.player2 && this.player2.isBye)
         ) {
-            this.result = "bye";
+            this.determineWinner();
+            this.updateMetadataAfterMatch();
         }
     }
 
@@ -32,10 +34,10 @@ class PlayOffMatch extends Match {
         if (this.player1.isBye || this.player2.isBye) {
             if (this.player1.isBye) {
                 this.winner = this.player2;
-                this.looser = this.player1;
+                this.loser = this.player1;
             } else {
                 this.winner = this.player1;
-                this.looser = this.player2;
+                this.loser = this.player2;
             }
         } else {
             super.determineWinner();
@@ -57,16 +59,16 @@ class PlayOffMatch extends Match {
             }
         }
 
-        if (this.nextMatchForLooser) {
-            if (!this.nextMatchForLooser.player1) {
-                this.nextMatchForLooser.player1 = new PlayOffPlayer(
-                    this.looser.player,
-                    this.looser.isBye
+        if (this.nextMatchForLoser) {
+            if (!this.nextMatchForLoser.player1) {
+                this.nextMatchForLoser.player1 = new PlayOffPlayer(
+                    this.loser.player,
+                    this.loser.isBye
                 );
             } else {
-                this.nextMatchForLooser.player2 = new PlayOffPlayer(
-                    this.looser.player,
-                    this.looser.isBye
+                this.nextMatchForLoser.player2 = new PlayOffPlayer(
+                    this.loser.player,
+                    this.loser.isBye
                 );
             }
         }
