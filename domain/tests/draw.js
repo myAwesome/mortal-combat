@@ -1,32 +1,40 @@
 const { Draw } = require("../models/Draw");
-const { strictEqual, stats } = require("../../utils/util");
 
-/** Draw  **/
-const draw8 = new Draw(8);
-strictEqual(draw8.capacity, 8);
-draw8.createMatches(8);
-strictEqual(draw8.matches.size, 12);
+describe("Draw", () => {
+  test("draw8 has capacity 8 and creates 12 matches", () => {
+    const draw8 = new Draw(8);
+    expect(draw8.capacity).toBe(8);
+    draw8.createMatches(8);
+    expect(draw8.matches.size).toBe(12);
+  });
 
-const draw16 = new Draw(16);
-draw16.createMatches(16);
-strictEqual(draw16.matches.size, 32);
+  test("draw16 creates 32 matches", () => {
+    const draw16 = new Draw(16);
+    draw16.createMatches(16);
+    expect(draw16.matches.size).toBe(32);
+  });
 
-const draw32 = new Draw(32);
-draw32.createMatches(32);
-strictEqual(draw32.matches.size, 80);
+  test("draw32 creates 80 matches", () => {
+    const draw32 = new Draw(32);
+    draw32.createMatches(32);
+    expect(draw32.matches.size).toBe(80);
+  });
 
-const draw64 = new Draw(64);
-draw64.createMatches(64);
-strictEqual(draw64.matches.size, 192);
-const placesPriority = Draw.calcPlacesPriority(8);
+  test("draw64 creates 192 matches", () => {
+    const draw64 = new Draw(64);
+    draw64.createMatches(64);
+    expect(draw64.matches.size).toBe(192);
+  });
 
-strictEqual(placesPriority[0], 1);
-strictEqual(placesPriority[1], 8);
-strictEqual(placesPriority[2], 4);
-strictEqual(placesPriority[3], 5);
-strictEqual(placesPriority[4], 6);
-strictEqual(placesPriority[5], 3);
-strictEqual(placesPriority[6], 7);
-strictEqual(placesPriority[7], 2);
-
-stats();
+  test("calcPlacesPriority(8) returns correct seeding order", () => {
+    const placesPriority = Draw.calcPlacesPriority(8);
+    expect(placesPriority[0]).toBe(1);
+    expect(placesPriority[1]).toBe(8);
+    expect(placesPriority[2]).toBe(4);
+    expect(placesPriority[3]).toBe(5);
+    expect(placesPriority[4]).toBe(6);
+    expect(placesPriority[5]).toBe(3);
+    expect(placesPriority[6]).toBe(7);
+    expect(placesPriority[7]).toBe(2);
+  });
+});

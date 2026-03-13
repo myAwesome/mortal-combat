@@ -1,53 +1,74 @@
-const { strictEqual, throws, stats, offTests } = require("../../utils/util");
 const { Group } = require("../models/Group");
-const { Player} = require("../models/Player");
-const { GroupPlayer} = require("../models/GroupPlayer");
+const { Player } = require("../models/Player");
+const { GroupPlayer } = require("../models/GroupPlayer");
 
-const groupA = new Group("A");
-groupA.capacity = 3;
-const kei = new GroupPlayer(new Player("Kei"));
-const jo = new GroupPlayer(new Player("Jo"));
-const ivo = new GroupPlayer(new Player("Ivo"));
-groupA.addPlayer(kei);
-strictEqual(groupA.players.includes(kei), true);
-strictEqual(kei.groupMetadata.group, "A");
-groupA.addPlayer(jo);
-groupA.addPlayer(ivo);
+describe("Group", () => {
+  let groupA, kei, jo, ivo;
 
-// test out of capacity
-throws(() => {
-  const kutuzov = new GroupPlayer(new Player("kutuzov"));
-  groupA.addPlayer(kutuzov);
+  beforeEach(() => {
+    groupA = new Group("A");
+    groupA.capacity = 3;
+    kei = new GroupPlayer(new Player("Kei"));
+    jo = new GroupPlayer(new Player("Jo"));
+    ivo = new GroupPlayer(new Player("Ivo"));
+  });
+
+  test("addPlayer adds player and sets group metadata", () => {
+    groupA.addPlayer(kei);
+    expect(groupA.players.includes(kei)).toBe(true);
+    expect(kei.groupMetadata.group).toBe("A");
+  });
+
+  test("addPlayer throws when over capacity", () => {
+    groupA.addPlayer(kei);
+    groupA.addPlayer(jo);
+    groupA.addPlayer(ivo);
+    expect(() => {
+      const kutuzov = new GroupPlayer(new Player("kutuzov"));
+      groupA.addPlayer(kutuzov);
+    }).toThrow();
+  });
+
+  test("createMatches creates 3 matches for 3 players", () => {
+    groupA.addPlayer(kei);
+    groupA.addPlayer(jo);
+    groupA.addPlayer(ivo);
+    groupA.createMatches();
+    expect(groupA.matches.length).toBe(3);
+  });
+
+  test("orderPlayersByPlace assigns correct places after results", () => {
+    groupA.addPlayer(kei);
+    groupA.addPlayer(jo);
+    groupA.addPlayer(ivo);
+    groupA.createMatches();
+
+    groupA.matches.forEach((m) => {
+      if (
+        (m.player1 === kei && m.player2 === jo) ||
+        (m.player2 === kei && m.player1 === jo)
+      ) {
+        m.result = "6-4";
+      }
+      if (
+        (m.player1 === kei && m.player2 === ivo) ||
+        (m.player2 === kei && m.player1 === ivo)
+      ) {
+        m.result = "6-4";
+      }
+      if (
+        (m.player1 === jo && m.player2 === ivo) ||
+        (m.player2 === jo && m.player1 === ivo)
+      ) {
+        m.result = "6-4";
+      }
+    });
+
+    groupA.players.sort(Group.orderPlaces);
+    groupA.orderPlayersByPlace();
+
+    expect(kei.groupMetadata.place).toBe(1);
+    expect(jo.groupMetadata.place).toBe(2);
+    expect(ivo.groupMetadata.place).toBe(3);
+  });
 });
-
-groupA.createMatches();
-strictEqual(groupA.matches.length, 3);
-
-groupA.matches.forEach((m) => {
-  if (
-    (m.player1 === kei && m.player2 === jo) ||
-    (m.player2 === kei && m.player1 === jo)
-  ) {
-    m.result = "6-4";
-  }
-  if (
-    (m.player1 === kei && m.player2 === ivo) ||
-    (m.player2 === kei && m.player1 === ivo)
-  ) {
-    m.result = "6-4";
-  }
-  if (
-    (m.player1 === jo && m.player2 === ivo) ||
-    (m.player2 === jo && m.player1 === ivo)
-  ) {
-    m.result = "6-4";
-  }
-});
-
-groupA.players.sort(Group.orderPlaces);
-groupA.orderPlayersByPlace();
-strictEqual(kei.groupMetadata.place, 1);
-strictEqual(jo.groupMetadata.place, 2);
-strictEqual(ivo.groupMetadata.place, 3);
-
-stats();

@@ -1,12 +1,9 @@
-console.log(`\n SEASON TEST \n`)
-
-const { stats } = require("../../utils/util");
 const { Player } = require("../models/Player");
 const { LiguePlayer } = require("../models/LiguePlayer");
 const { Championship } = require("../models/Championship");
 const { points, groupPoints, randResult } = require("../models/mocks");
-// Create players
-const players = [
+
+const playerNames = [
   "Roger Federer", "Rafael Nadal", "Novak Djokovic", "Andy Murray",
   "Juan Martin del Potro", "Andy Roddick", "Robin Soderling",
   "Jo-Wilfried Tsonga", "Marin Cilic", "Fernando Verdasco",
@@ -16,12 +13,9 @@ const players = [
   "David Nalbandian", "Markos Baghdatis", "Grigor Dimitrov",
   "Kei Nishikori", "Nick Kirgios", "Dominik Thiem",
   "Marat Safin", "Fabio Fognini", "James Blake",
-  "Alex Dolgopolov", "Juan Monaco"
-].map(name => new Player(name));
+  "Alex Dolgopolov", "Juan Monaco",
+];
 
-const liguePlayers = players.map(player => new LiguePlayer(player));
-
-// Create championships
 const championshipConfigs = [
   { name: "January", capacity: 16 },
   { name: "February", capacity: 12 },
@@ -34,16 +28,14 @@ const championshipConfigs = [
   { name: "September", capacity: 16 },
   { name: "October", capacity: 12 },
   { name: "November", capacity: 12 },
-  { name: "December", capacity: 9 }
+  { name: "December", capacity: 9 },
 ];
-const champs = championshipConfigs.map(cfg => new Championship(cfg.name, cfg.capacity));
-
 
 const shufflePlayers = (players, capacity) => {
   return [...players].sort(() => 0.5 - Math.random()).slice(0, capacity);
 };
 
-for (let c of champs) {
+const runChampionship = (c, liguePlayers) => {
   const entryList = shufflePlayers(liguePlayers, c.capacity);
   for (let lp of entryList) {
     lp.champs.push(c);
@@ -54,43 +46,20 @@ for (let c of champs) {
   c.entryList = entryList.map((lp) => lp.player);
   c.createGroups();
   c.createDraw();
-  c.groups.forEach((g) => {
-    g.matches.forEach((m) => {
-      m.result = randResult();
-    });
-  });
+
+  c.groups.forEach((g) => g.matches.forEach((m) => { m.result = randResult(); }));
   c.groups.forEach((g) => g.players.sort(g.orderPlaces));
-  c.groups.forEach((g) => {
-    g.orderPlayersByPlace();
-  });
+  c.groups.forEach((g) => g.orderPlayersByPlace());
   c.addPointsAccordingToPlace();
   c.joinedGroupsResult = c.createJoinedGroupsResult(c.groups);
   c.prepareQualifiersForDraw();
   c.seedDrawPlayers();
   c.startDraw();
 
-  c.draw.matches.forEach((m) => {
-    if (m.playersInRound === 16) {
-      m.result = randResult();
-    }
-  });
-
-  c.draw.matches.forEach((m) => {
-    if (m.playersInRound === 8) {
-      m.result = randResult();
-    }
-  });
-
-  c.draw.matches.forEach((m) => {
-    if (m.playersInRound === 4) {
-      m.result = randResult();
-    }
-  });
-
-  c.draw.matches.forEach((m) => {
-    if (m.playersInRound === 2) {
-      m.result = randResult();
-    }
+  [16, 8, 4, 2].forEach((round) => {
+    c.draw.matches.forEach((m) => {
+      if (m.playersInRound === round) m.result = randResult();
+    });
   });
 
   c.createTournamentResult();
@@ -99,21 +68,21 @@ for (let c of champs) {
     const lp = liguePlayers.find((lp) => lp.player === cp.player);
     lp.points = lp.points + cp.points;
   }
-}
+};
 
-liguePlayers.sort((a, b) => {
-  return a.points < b.points ? 1 : -1;
+describe("Season", () => {
+  test("full season runs all championships and produces a ranking", () => {
+    const players = playerNames.map((name) => new Player(name));
+    const liguePlayers = players.map((player) => new LiguePlayer(player));
+    const champs = championshipConfigs.map((cfg) => new Championship(cfg.name, cfg.capacity));
+
+    expect(() => {
+      for (let c of champs) {
+        runChampionship(c, liguePlayers);
+      }
+    }).not.toThrow();
+
+    liguePlayers.sort((a, b) => (a.points < b.points ? 1 : -1));
+    expect(liguePlayers[0].points).toBeGreaterThanOrEqual(liguePlayers[liguePlayers.length - 1].points);
+  });
 });
-
-console.log("");
-let place = 0;
-console.log(`\n Single Ranking \n`)
-
-console.log("");
-for (let lp of liguePlayers) {
-  console.log(
-    `${++place} ${lp.player.name} - ${lp.points} (${lp.champs.length} champs)`
-  );
-}
-
-stats();
