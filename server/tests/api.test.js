@@ -1,5 +1,17 @@
 const request = require('supertest');
 const app = require('../app');
+const migrate = require('../db/migrate');
+const repo = require('../db/repo');
+const pool = require('../db/connection');
+
+beforeAll(async () => {
+  await migrate();
+  await repo.truncateAll();
+});
+
+afterAll(async () => {
+  await pool.end();
+});
 
 // ── Players ───────────────────────────────────────────────────────────────────
 

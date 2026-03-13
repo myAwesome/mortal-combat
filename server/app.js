@@ -1,24 +1,11 @@
 const express = require('express');
 
-const { Player } = require('../domain/models/Player');
-const { Championship } = require('../domain/models/Championship');
 const { Group } = require('../domain/models/Group');
-const { LiguePlayer } = require('../domain/models/LiguePlayer');
 const { RankingBuilder } = require('../domain/builders/ranking');
-const { points, groupPoints } = require('../domain/models/mocks');
+const repo = require('./db/repo');
 
 const app = express();
 app.use(express.json());
-
-// ── In-memory store ──────────────────────────────────────────────────────────
-let nextId = 1;
-const newId = () => String(nextId++);
-
-const store = {
-  players: new Map(),        // id → Player
-  championships: new Map(),  // id → Championship
-  liguePlayers: new Map(),   // id → LiguePlayer
-};
 
 // ── Serializers ──────────────────────────────────────────────────────────────
 const serializeSet = (set) => set ? `${set.p1}-${set.p2}` : null;
@@ -80,142 +67,204 @@ const serializeChampionship = (id, c) => ({
 
 // ── Players ──────────────────────────────────────────────────────────────────
 
-app.get('/api/players', (_req, res) => {
-  const list = Array.from(store.players.entries()).map(([id, p]) => ({ id, name: p.name }));
-  res.json(list);
+app.get('/api/players', async (_req, res) => {
+  try {
+    const list = await repo.getAllPlayersList();
+    res.json(list);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.post('/api/players', (req, res) => {
+app.post('/api/players', async (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
-  const id = newId();
-  store.players.set(id, new Player(name));
-  res.status(201).json({ id, name });
+  try {
+    const player = await repo.createPlayer(name);
+    res.status(201).json(player);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.get('/api/players/:id', (req, res) => {
-  const p = store.players.get(req.params.id);
-  if (!p) return res.status(404).json({ error: 'Player not found' });
-  res.json({ id: req.params.id, name: p.name });
+app.get('/api/players/:id', async (req, res) => {
+  try {
+    const p = await repo.getPlayerRow(req.params.id);
+    if (!p) return res.status(404).json({ error: 'Player not found' });
+    res.json(p);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.put('/api/players/:id', (req, res) => {
-  const p = store.players.get(req.params.id);
-  if (!p) return res.status(404).json({ error: 'Player not found' });
+app.put('/api/players/:id', async (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
-  p.name = name;
-  res.json({ id: req.params.id, name: p.name });
+  try {
+    const p = await repo.updatePlayer(req.params.id, name);
+    if (!p) return res.status(404).json({ error: 'Player not found' });
+    res.json(p);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.delete('/api/players/:id', (req, res) => {
-  if (!store.players.delete(req.params.id))
-    return res.status(404).json({ error: 'Player not found' });
-  res.status(204).send();
+app.delete('/api/players/:id', async (req, res) => {
+  try {
+    const deleted = await repo.deletePlayer(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Player not found' });
+    res.status(204).send();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ── Championships ─────────────────────────────────────────────────────────────
 
-app.get('/api/championships', (_req, res) => {
-  res.json(Array.from(store.championships.entries()).map(([id, c]) => serializeChampionship(id, c)));
+app.get('/api/championships', async (_req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const list = await repo.getAllChampionships(playersMap);
+    res.json(list.map(({ id, champ }) => serializeChampionship(id, champ)));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.post('/api/championships', (req, res) => {
+app.post('/api/championships', async (req, res) => {
   const { name, capacity, hasGroups = true } = req.body;
   if (!name || !capacity) return res.status(400).json({ error: 'name and capacity are required' });
-  const id = newId();
-  const champ = new Championship(name, capacity, hasGroups);
-  champ.points = points;
-  champ.groupPoints = groupPoints;
-  store.championships.set(id, champ);
-  res.status(201).json(serializeChampionship(id, champ));
+  try {
+    const { id, champ } = await repo.createChampionship(name, capacity, hasGroups);
+    res.status(201).json(serializeChampionship(id, champ));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.get('/api/championships/:id', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
-  res.json(serializeChampionship(req.params.id, c));
+app.get('/api/championships/:id', async (req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+    res.json(serializeChampionship(found.id, found.champ));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.put('/api/championships/:id', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
+app.put('/api/championships/:id', async (req, res) => {
   const { name, capacity, hasGroups } = req.body;
-  if (name !== undefined) c.name = name;
-  if (capacity !== undefined) c.capacity = capacity;
-  if (hasGroups !== undefined) c.hasGroups = hasGroups;
-  res.json(serializeChampionship(req.params.id, c));
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+
+    const { champ } = found;
+    if (name !== undefined) champ.name = name;
+    if (capacity !== undefined) champ.capacity = capacity;
+    if (hasGroups !== undefined) champ.hasGroups = hasGroups;
+
+    await repo.updateChampionshipFields(req.params.id, { name, capacity, hasGroups });
+    res.json(serializeChampionship(found.id, champ));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.delete('/api/championships/:id', (req, res) => {
-  if (!store.championships.delete(req.params.id))
-    return res.status(404).json({ error: 'Championship not found' });
-  res.status(204).send();
+app.delete('/api/championships/:id', async (req, res) => {
+  try {
+    const deleted = await repo.deleteChampionship(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Championship not found' });
+    res.status(204).send();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ── Championship actions ──────────────────────────────────────────────────────
 
 // POST /api/championships/:id/entry-list  { playerIds: [id, ...] }
-app.post('/api/championships/:id/entry-list', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
+app.post('/api/championships/:id/entry-list', async (req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
 
-  const { playerIds } = req.body;
-  if (!Array.isArray(playerIds) || playerIds.length === 0)
-    return res.status(400).json({ error: 'playerIds array is required' });
+    const { playerIds } = req.body;
+    if (!Array.isArray(playerIds) || playerIds.length === 0)
+      return res.status(400).json({ error: 'playerIds array is required' });
 
-  const players = [];
-  for (const pid of playerIds) {
-    const p = store.players.get(String(pid));
-    if (!p) return res.status(404).json({ error: `Player ${pid} not found` });
-    players.push(p);
+    const players = [];
+    for (const pid of playerIds) {
+      const p = playersMap.get(String(pid));
+      if (!p) return res.status(404).json({ error: `Player ${pid} not found` });
+      players.push(p);
+    }
+
+    const { id, champ } = found;
+    champ.entryList = players;
+    await repo.saveChampionshipState(id, champ);
+    res.json(serializeChampionship(id, champ));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
-
-  c.entryList = players;
-  res.json(serializeChampionship(req.params.id, c));
 });
 
 // POST /api/championships/:id/groups  { optimalGroupSize?: number }
-app.post('/api/championships/:id/groups', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
-  if (!c.players) return res.status(400).json({ error: 'Entry list not set' });
-
-  const { optimalGroupSize = 3 } = req.body;
+app.post('/api/championships/:id/groups', async (req, res) => {
   try {
-    c.createGroups(optimalGroupSize);
-    res.json(serializeChampionship(req.params.id, c));
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+
+    const { champ, id } = found;
+    if (!champ.players) return res.status(400).json({ error: 'Entry list not set' });
+
+    const { optimalGroupSize = 3 } = req.body;
+    champ.createGroups(optimalGroupSize);
+    await repo.saveChampionshipState(id, champ);
+    res.json(serializeChampionship(id, champ));
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
 // POST /api/championships/:id/draw
-app.post('/api/championships/:id/draw', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
+app.post('/api/championships/:id/draw', async (req, res) => {
   try {
-    c.createDraw();
-    res.json(serializeChampionship(req.params.id, c));
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+
+    const { champ, id } = found;
+    champ.createDraw();
+    await repo.saveChampionshipState(id, champ);
+    res.json(serializeChampionship(id, champ));
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
-// POST /api/championships/:id/draw/start  — seed qualified players into draw
-app.post('/api/championships/:id/draw/start', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
-  if (!c.draw) return res.status(400).json({ error: 'Draw not created yet' });
+// POST /api/championships/:id/draw/start
+app.post('/api/championships/:id/draw/start', async (req, res) => {
   try {
-    if (c.hasGroups) {
-      c.addPointsAccordingToPlace();
-      c.joinedGroupsResult = c.createJoinedGroupsResult(c.groups);
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+
+    const { champ, id } = found;
+    if (!champ.draw) return res.status(400).json({ error: 'Draw not created yet' });
+
+    if (champ.hasGroups) {
+      champ.addPointsAccordingToPlace();
+      champ.joinedGroupsResult = champ.createJoinedGroupsResult(champ.groups);
     }
-    c.prepareQualifiersForDraw();
-    c.seedDrawPlayers();
-    c.startDraw();
-    res.json(serializeChampionship(req.params.id, c));
+    champ.prepareQualifiersForDraw();
+    champ.seedDrawPlayers();
+    champ.startDraw();
+    await repo.saveChampionshipState(id, champ);
+    res.json(serializeChampionship(id, champ));
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
@@ -223,45 +272,62 @@ app.post('/api/championships/:id/draw/start', (req, res) => {
 
 // ── Groups ────────────────────────────────────────────────────────────────────
 
-app.get('/api/championships/:id/groups', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
-  res.json(c.groups.map(serializeGroup));
+app.get('/api/championships/:id/groups', async (req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+    res.json(found.champ.groups.map(serializeGroup));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.get('/api/championships/:id/groups/:name', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
-  const g = c.groups.find((g) => g.name === req.params.name);
-  if (!g) return res.status(404).json({ error: 'Group not found' });
-  res.json(serializeGroup(g));
+app.get('/api/championships/:id/groups/:name', async (req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+    const g = found.champ.groups.find((g) => g.name === req.params.name);
+    if (!g) return res.status(404).json({ error: 'Group not found' });
+    res.json(serializeGroup(g));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ── Group matches ─────────────────────────────────────────────────────────────
 
-app.get('/api/championships/:id/groups/:name/matches', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
-  const g = c.groups.find((g) => g.name === req.params.name);
-  if (!g) return res.status(404).json({ error: 'Group not found' });
-  res.json(g.matches.map(serializeGroupMatch));
+app.get('/api/championships/:id/groups/:name/matches', async (req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+    const g = found.champ.groups.find((g) => g.name === req.params.name);
+    if (!g) return res.status(404).json({ error: 'Group not found' });
+    res.json(g.matches.map(serializeGroupMatch));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // PUT /api/championships/:id/groups/:name/matches/:matchId  { result: "6-4" }
-app.put('/api/championships/:id/groups/:name/matches/:matchId', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
-  const g = c.groups.find((g) => g.name === req.params.name);
-  if (!g) return res.status(404).json({ error: 'Group not found' });
-
-  const matchIndex = parseInt(req.params.matchId, 10);
-  const m = g.matches[matchIndex];
-  if (!m) return res.status(404).json({ error: 'Match not found' });
-
-  const { result } = req.body;
-  if (!result) return res.status(400).json({ error: 'result is required (e.g. "6-4")' });
-
+app.put('/api/championships/:id/groups/:name/matches/:matchId', async (req, res) => {
   try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+    const { champ, id } = found;
+    const g = champ.groups.find((g) => g.name === req.params.name);
+    if (!g) return res.status(404).json({ error: 'Group not found' });
+
+    const matchIndex = parseInt(req.params.matchId, 10);
+    const m = g.matches[matchIndex];
+    if (!m) return res.status(404).json({ error: 'Match not found' });
+
+    const { result } = req.body;
+    if (!result) return res.status(400).json({ error: 'result is required (e.g. "6-4")' });
+
     m.result = result;
 
     if (g.matches.every((m) => m.result !== null)) {
@@ -269,6 +335,7 @@ app.put('/api/championships/:id/groups/:name/matches/:matchId', (req, res) => {
       g.orderPlayersByPlace();
     }
 
+    await repo.saveChampionshipState(id, champ);
     res.json(serializeGroupMatch(m, matchIndex));
   } catch (e) {
     res.status(400).json({ error: e.message });
@@ -277,35 +344,49 @@ app.put('/api/championships/:id/groups/:name/matches/:matchId', (req, res) => {
 
 // ── Draw matches ──────────────────────────────────────────────────────────────
 
-app.get('/api/championships/:id/draw/matches', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
-  if (!c.draw) return res.status(404).json({ error: 'Draw not created' });
-  res.json(Array.from(c.draw.matches.values()).map(serializePlayOffMatch));
+app.get('/api/championships/:id/draw/matches', async (req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+    if (!found.champ.draw) return res.status(404).json({ error: 'Draw not created' });
+    res.json(Array.from(found.champ.draw.matches.values()).map(serializePlayOffMatch));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.get('/api/championships/:id/draw/matches/:matchId', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
-  if (!c.draw) return res.status(404).json({ error: 'Draw not created' });
-  const m = c.draw.matches.get(req.params.matchId);
-  if (!m) return res.status(404).json({ error: 'Match not found' });
-  res.json(serializePlayOffMatch(m));
+app.get('/api/championships/:id/draw/matches/:matchId', async (req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+    if (!found.champ.draw) return res.status(404).json({ error: 'Draw not created' });
+    const m = found.champ.draw.matches.get(req.params.matchId);
+    if (!m) return res.status(404).json({ error: 'Match not found' });
+    res.json(serializePlayOffMatch(m));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // PUT /api/championships/:id/draw/matches/:matchId  { result: "6-4" }
-app.put('/api/championships/:id/draw/matches/:matchId', (req, res) => {
-  const c = store.championships.get(req.params.id);
-  if (!c) return res.status(404).json({ error: 'Championship not found' });
-  if (!c.draw) return res.status(404).json({ error: 'Draw not created' });
-  const m = c.draw.matches.get(req.params.matchId);
-  if (!m) return res.status(404).json({ error: 'Match not found' });
-
-  const { result } = req.body;
-  if (!result) return res.status(400).json({ error: 'result is required (e.g. "6-4")' });
-
+app.put('/api/championships/:id/draw/matches/:matchId', async (req, res) => {
   try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+    if (!found.champ.draw) return res.status(404).json({ error: 'Draw not created' });
+
+    const { champ, id } = found;
+    const m = champ.draw.matches.get(req.params.matchId);
+    if (!m) return res.status(404).json({ error: 'Match not found' });
+
+    const { result } = req.body;
+    if (!result) return res.status(400).json({ error: 'result is required (e.g. "6-4")' });
+
     m.result = result;
+    await repo.saveChampionshipState(id, champ);
     res.json(serializePlayOffMatch(m));
   } catch (e) {
     res.status(400).json({ error: e.message });
@@ -314,70 +395,107 @@ app.put('/api/championships/:id/draw/matches/:matchId', (req, res) => {
 
 // ── Ligue players ─────────────────────────────────────────────────────────────
 
-app.get('/api/ligue', (_req, res) => {
-  const ranking = new RankingBuilder().build(Array.from(store.liguePlayers.values()));
-  res.json(ranking);
+app.get('/api/ligue', async (_req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const list = await repo.getAllLiguePlayers(playersMap);
+    const ranking = new RankingBuilder().build(list.map(({ lp }) => lp));
+    res.json(ranking);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.get('/api/ligue/players', (_req, res) => {
-  const list = Array.from(store.liguePlayers.entries()).map(([id, lp]) => ({
-    id,
-    name: lp.player.name,
-    points: lp.points,
-    champsPlayed: lp.champs.length,
-    champs: lp.champs,
-  }));
-  res.json(list);
+app.get('/api/ligue/players', async (_req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const list = await repo.getAllLiguePlayers(playersMap);
+    res.json(list.map(({ id, lp }) => ({
+      id,
+      name: lp.player.name,
+      points: lp.points,
+      champsPlayed: lp.champs.length,
+      champs: lp.champs,
+    })));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.post('/api/ligue/players', (req, res) => {
+app.post('/api/ligue/players', async (req, res) => {
   const { playerId } = req.body;
   if (!playerId) return res.status(400).json({ error: 'playerId is required' });
+  try {
+    const p = await repo.getPlayerRow(String(playerId));
+    if (!p) return res.status(404).json({ error: 'Player not found' });
 
-  const p = store.players.get(String(playerId));
-  if (!p) return res.status(404).json({ error: 'Player not found' });
+    const existingId = await repo.findLiguePlayerByPlayerId(String(playerId));
+    if (existingId)
+      return res.status(409).json({ error: 'Player already in ligue', id: existingId });
 
-  const existing = Array.from(store.liguePlayers.entries()).find(([, lp]) => lp.player === p);
-  if (existing) return res.status(409).json({ error: 'Player already in ligue', id: existing[0] });
-
-  const id = newId();
-  store.liguePlayers.set(id, new LiguePlayer(p));
-  res.status(201).json({ id, name: p.name, points: 0, champsPlayed: 0, champs: [] });
+    const id = await repo.createLiguePlayer(String(playerId));
+    res.status(201).json({ id, name: p.name, points: 0, champsPlayed: 0, champs: [] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.get('/api/ligue/players/:id', (req, res) => {
-  const lp = store.liguePlayers.get(req.params.id);
-  if (!lp) return res.status(404).json({ error: 'Ligue player not found' });
-  res.json({ id: req.params.id, name: lp.player.name, points: lp.points, champsPlayed: lp.champs.length, champs: lp.champs });
+app.get('/api/ligue/players/:id', async (req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getLiguePlayerById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Ligue player not found' });
+    const { id, lp } = found;
+    res.json({ id, name: lp.player.name, points: lp.points, champsPlayed: lp.champs.length, champs: lp.champs });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // PUT /api/ligue/players/:id  { points?: number, champId?: string }
-app.put('/api/ligue/players/:id', (req, res) => {
-  const lp = store.liguePlayers.get(req.params.id);
-  if (!lp) return res.status(404).json({ error: 'Ligue player not found' });
+app.put('/api/ligue/players/:id', async (req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getLiguePlayerById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Ligue player not found' });
 
-  const { points: pts, champId } = req.body;
-  if (pts !== undefined) lp.points += pts;
-  if (champId !== undefined) {
-    const c = store.championships.get(String(champId));
-    if (!c) return res.status(404).json({ error: 'Championship not found' });
-    lp.champs.push(c.name);
+    const { points: pts, champId } = req.body;
+
+    if (pts !== undefined) {
+      await repo.updateLiguePlayerPoints(req.params.id, pts);
+    }
+    if (champId !== undefined) {
+      const champName = await repo.getChampionshipName(String(champId));
+      if (!champName) return res.status(404).json({ error: 'Championship not found' });
+      await repo.appendLiguePlayerChamp(req.params.id, champName);
+    }
+
+    const updated = await repo.getLiguePlayerById(req.params.id, playersMap);
+    const { id, lp } = updated;
+    res.json({ id, name: lp.player.name, points: lp.points, champsPlayed: lp.champs.length, champs: lp.champs });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
-
-  res.json({ id: req.params.id, name: lp.player.name, points: lp.points, champsPlayed: lp.champs.length, champs: lp.champs });
 });
 
-app.delete('/api/ligue/players/:id', (req, res) => {
-  if (!store.liguePlayers.delete(req.params.id))
-    return res.status(404).json({ error: 'Ligue player not found' });
-  res.status(204).send();
+app.delete('/api/ligue/players/:id', async (req, res) => {
+  try {
+    const deleted = await repo.deleteLiguePlayer(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Ligue player not found' });
+    res.status(204).send();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  const migrate = require('./db/migrate');
+  migrate()
+    .then(() => app.listen(PORT, () => console.log(`Server running on port ${PORT}`)))
+    .catch((err) => { console.error('Migration failed', err); process.exit(1); });
 }
 
 module.exports = app;
