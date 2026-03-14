@@ -20,3 +20,10 @@ export const addLiguePlayer = (playerId) =>
 
 export const removeLiguePlayer = (id) =>
   fetch(`${BASE}/players/${id}`, { method: 'DELETE' }).then(handleResponse)
+
+export const updateLiguePlayer = (id, data) =>
+  fetch(`${BASE}/players/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).then(handleResponse)
