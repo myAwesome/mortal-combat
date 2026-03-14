@@ -12,7 +12,7 @@ export default function NavBar() {
           <NavLink to="/" end>Dashboard</NavLink>
           <NavLink to="/players">Players</NavLink>
           <NavLink to="/championships">Championships</NavLink>
-          <NavLink to="/ligue">Ligue</NavLink>
+          <NavLink to="/ligues">Ligues</NavLink>
         </div>
       </div>
     </nav>

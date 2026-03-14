@@ -29,6 +29,15 @@ async function migrate() {
       FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
     ) ENGINE=InnoDB
   `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS ligues (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL
+    ) ENGINE=InnoDB
+  `);
+  await db.execute(`ALTER TABLE championships ADD COLUMN IF NOT EXISTS ligue_id INT NULL`);
+  await db.execute(`ALTER TABLE championships ADD COLUMN IF NOT EXISTS points_config_json TEXT`);
+  await db.execute(`ALTER TABLE ligue_players ADD COLUMN IF NOT EXISTS ligue_id INT NULL`);
 }
 
 module.exports = migrate;
