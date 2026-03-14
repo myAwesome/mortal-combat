@@ -67,8 +67,9 @@ class Championship {
   // Qualifier Preparation
   prepareQualifiersForDraw = () => {
     const byes = Array(this.draw.emptySlots).fill({ player: { name: BYE_PLAYER_NAME } });
+    const qualifierSource = this.hasGroups ? this.joinedGroupsResult : this.players;
     this.qualifiersAndBye = [
-      ...this.joinedGroupsResult.slice(0, this.draw.qualifiers),
+      ...qualifierSource.slice(0, this.draw.qualifiers),
       ...byes,
     ];
   };
