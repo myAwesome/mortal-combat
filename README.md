@@ -1,20 +1,54 @@
 # Champ
 
-Platform for automation and digitalization of tennis tournaments management.
+Platform for automation and digitalization of tennis tournament management.
 
 ## Stack
 
-- **Runtime:** Node.js
-- **Framework:** Express.js
-- **Testing:** Jest
-- **Storage:** In-memory (Maps)
+**Backend**
+- Runtime: Node.js
+- Framework: Express.js
+- Database: MySQL 5.7+
+- Testing: Jest + Supertest
+
+**Frontend**
+- Framework: React 18
+- Build Tool: Vite
+- Routing: React Router v6
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js
+- MySQL 5.7+ running locally
+
+### Environment
+
+Create a `.env` file in the project root:
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=yourpassword
+DB_NAME=champ
+```
+
+### Backend
+
 ```bash
 npm install
-npm start        # starts server on port 3000
+npm start        # starts Express server on port 3000
 npm test         # runs Jest test suite
+```
+
+### Frontend
+
+```bash
+cd client
+npm install
+npm run dev      # starts Vite dev server (proxies /api to port 3000)
+npm run build    # production build
 ```
 
 ## API Routes
@@ -34,14 +68,14 @@ npm test         # runs Jest test suite
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/api/championships` | List all championships |
-| `POST` | `/api/championships` | Create championship (`name`, `capacity`, optional `hasGroups`) |
+| `POST` | `/api/championships` | Create championship (`name`, `capacity`, optional `hasGroups`, `ligueId`) |
 | `GET` | `/api/championships/:id` | Get championship details |
 | `PUT` | `/api/championships/:id` | Update championship |
 | `DELETE` | `/api/championships/:id` | Delete championship |
-| `POST` | `/api/championships/:id/entry-list` | Add players (`playerIds` array) |
+| `POST` | `/api/championships/:id/entry-list` | Set player entry list (`playerIds` array) |
 | `POST` | `/api/championships/:id/groups` | Create group stage (optional `optimalGroupSize`, default 3) |
 | `POST` | `/api/championships/:id/draw` | Create playoff draw |
-| `POST` | `/api/championships/:id/draw/start` | Start draw & seed qualified players |
+| `POST` | `/api/championships/:id/draw/start` | Seed qualified players and start playoff |
 
 ### Groups
 
@@ -60,31 +94,40 @@ npm test         # runs Jest test suite
 | `GET` | `/api/championships/:id/draw/matches/:matchId` | Get playoff match |
 | `PUT` | `/api/championships/:id/draw/matches/:matchId` | Record playoff match result |
 
-### Ligue (League Rankings)
+### Ligues (League Rankings)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/ligue` | Overall ranking sorted by points |
-| `GET` | `/api/ligue/players` | List all ligue players with stats |
-| `POST` | `/api/ligue/players` | Add player to ligue (`playerId` required) |
-| `GET` | `/api/ligue/players/:id` | Get ligue player details |
-| `PUT` | `/api/ligue/players/:id` | Update ligue player (`points` or `champId`) |
-| `DELETE` | `/api/ligue/players/:id` | Remove player from ligue |
+| `GET` | `/api/ligues` | List all ligues |
+| `POST` | `/api/ligues` | Create ligue (`name` required) |
+| `GET` | `/api/ligues/:id` | Get ligue details |
+| `DELETE` | `/api/ligues/:id` | Delete ligue |
+| `POST` | `/api/ligues/:id/players` | Add player to ligue (`playerId` required) |
+| `GET` | `/api/ligues/:id/ranking` | Get ligue ranking sorted by points |
+
+## Tournament Workflow
+
+1. **Entry List** — add players to a championship
+2. **Group Stage** *(optional)* — round-robin groups; points awarded by finishing place
+3. **Create Draw** — generate playoff bracket (power-of-2 capacity)
+4. **Start Draw** — seed qualified players using serpentine algorithm
+5. **Playoff** — record bracket match results; bye matches advance automatically
+6. **League Sync** *(optional)* — championship points aggregated to ligue standings
 
 ## Domain Models
 
 | Model | Description |
 |-------|-------------|
 | `Player` | Tennis player with a name |
-| `Championship` | Tournament with capacity, optional group stage and playoff draw |
-| `ChampionshipPlayer` | Player entry in a championship with points |
+| `Championship` | Tournament with capacity, optional group stage, playoff draw, and per-championship points config |
+| `ChampionshipPlayer` | Player entry in a championship with accumulated points |
 | `Group` | Round-robin group with players and matches |
 | `GroupPlayer` | Player in a group with stats metadata |
 | `GroupMetadata` | Points, wins, losses, place within a group |
-| `GroupMatch` | Match in group stage |
-| `Draw` | Playoff bracket structure |
-| `PlayOffMatch` | Match in playoff bracket with seeding and progression info |
-| `PlayOffPlayer` | Player in playoff (may be a bye) |
+| `GroupMatch` | Match in group stage; updates player stats on result |
+| `Draw` | Playoff bracket structure (power-of-2 capacity) |
+| `PlayOffMatch` | Bracket match with seeding, bye handling, and winner/loser progression |
+| `PlayOffPlayer` | Player in playoff bracket (may be a bye) |
 | `TennisSet` | Single set score parsed from string like `"6-4"` |
 | `LiguePlayer` | Player in league standings with accumulated points across championships |
 
@@ -93,12 +136,25 @@ npm test         # runs Jest test suite
 ```
 champ/
 ├── server/
-│   └── app.js              # Express server & all route handlers
+│   ├── app.js              # Express server & all route handlers
+│   └── db/
+│       ├── connection.js   # MySQL connection pool
+│       ├── migrate.js      # Schema creation & migrations
+│       └── repo.js         # DB abstraction layer & state serialization
 ├── domain/
-│   ├── models/             # Domain entities
+│   ├── models/             # Domain entities (Player, Championship, Group, Draw, …)
 │   ├── builders/
 │   │   └── ranking.js      # RankingBuilder
-│   └── tests/              # Jest tests
+│   └── tests/              # Domain unit tests
+├── client/
+│   ├── src/
+│   │   ├── App.jsx         # Routes & NavBar
+│   │   ├── pages/          # Dashboard, Players, Championships, Ligues, …
+│   │   ├── components/     # Shared UI (NavBar, Spinner, StatusBadge, …)
+│   │   ├── features/
+│   │   │   └── championship/  # Workflow steps, bracket rendering, stage logic
+│   │   └── api/            # Fetch wrappers per resource
+│   └── vite.config.js      # Vite config + /api proxy
 └── utils/
-    └── util.js             # Utilities
+    └── util.js             # Test helpers
 ```
