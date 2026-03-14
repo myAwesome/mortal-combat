@@ -57,9 +57,9 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {ranking.slice(0, 5).map((row) => (
-                <tr key={row.player}>
+                <tr key={row.player?.name ?? row.player}>
                   <td style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>{row.place}</td>
-                  <td style={{ fontWeight: 500 }}>{row.player}</td>
+                  <td style={{ fontWeight: 500 }}>{row.player?.name ?? row.player}</td>
                   <td style={{ color: 'var(--color-primary)', fontWeight: 600 }}>{row.points}</td>
                   <td style={{ color: 'var(--color-text-muted)' }}>{row.champsPlayed}</td>
                 </tr>
