@@ -86,6 +86,8 @@ function serializeChampionshipState(champ) {
 
 function deserializeChampionshipState(row, playersMap) {
   const champ = new Championship(row.name, row.capacity, !!row.has_groups);
+  champ.ligueLinked = !!row.ligue_linked;
+  champ.ligueSynced = !!row.ligue_synced;
   champ.points = points;
   champ.groupPoints = groupPoints;
 
@@ -215,7 +217,7 @@ async function deletePlayer(id) {
 
 async function getAllChampionships(playersMap) {
   const [rows] = await db.query(
-    'SELECT id, name, capacity, has_groups, state_json FROM championships'
+    'SELECT id, name, capacity, has_groups, ligue_linked, ligue_synced, state_json FROM championships'
   );
   return rows.map(r => ({
     id: String(r.id),
@@ -225,7 +227,7 @@ async function getAllChampionships(playersMap) {
 
 async function getChampionshipById(id, playersMap) {
   const [rows] = await db.query(
-    'SELECT id, name, capacity, has_groups, state_json FROM championships WHERE id = ?',
+    'SELECT id, name, capacity, has_groups, ligue_linked, ligue_synced, state_json FROM championships WHERE id = ?',
     [id]
   );
   if (!rows[0]) return null;
@@ -237,15 +239,17 @@ async function getChampionshipName(id) {
   return rows[0] ? rows[0].name : null;
 }
 
-async function createChampionship(name, capacity, hasGroups) {
+async function createChampionship(name, capacity, hasGroups, ligueLinked = false) {
   const [result] = await db.query(
-    'INSERT INTO championships (name, capacity, has_groups) VALUES (?, ?, ?)',
-    [name, capacity, hasGroups ? 1 : 0]
+    'INSERT INTO championships (name, capacity, has_groups, ligue_linked) VALUES (?, ?, ?, ?)',
+    [name, capacity, hasGroups ? 1 : 0, ligueLinked ? 1 : 0]
   );
   const id = String(result.insertId);
   const champ = new Championship(name, capacity, hasGroups);
   champ.points = points;
   champ.groupPoints = groupPoints;
+  champ.ligueLinked = ligueLinked;
+  champ.ligueSynced = false;
   return { id, champ };
 }
 
@@ -340,6 +344,16 @@ async function appendLiguePlayerChamp(id, champName) {
   return true;
 }
 
+async function syncChampionshipToLigue(champId, champ) {
+  for (const cp of champ.players) {
+    const liguePlayerId = await findLiguePlayerByPlayerId(cp.player.id);
+    if (!liguePlayerId) continue;
+    await updateLiguePlayerPoints(liguePlayerId, cp.points);
+    await appendLiguePlayerChamp(liguePlayerId, champ.name);
+  }
+  await db.query('UPDATE championships SET ligue_synced = 1 WHERE id = ?', [champId]);
+}
+
 async function deleteLiguePlayer(id) {
   const [result] = await db.query('DELETE FROM ligue_players WHERE id = ?', [id]);
   return result.affectedRows > 0;
@@ -375,6 +389,7 @@ module.exports = {
   createLiguePlayer,
   updateLiguePlayerPoints,
   appendLiguePlayerChamp,
+  syncChampionshipToLigue,
   deleteLiguePlayer,
   truncateAll,
 };

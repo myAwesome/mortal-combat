@@ -51,6 +51,7 @@ const serializeChampionship = (id, c) => ({
   name: c.name,
   capacity: c.capacity,
   hasGroups: c.hasGroups,
+  ligueLinked: c.ligueLinked || false,
   players: c.players
     ? c.players.map((cp) => ({ name: cp.player.name, points: cp.points }))
     : null,
@@ -132,10 +133,10 @@ app.get('/api/championships', async (_req, res) => {
 });
 
 app.post('/api/championships', async (req, res) => {
-  const { name, capacity, hasGroups = true } = req.body;
+  const { name, capacity, hasGroups = true, ligueLinked = false } = req.body;
   if (!name || !capacity) return res.status(400).json({ error: 'name and capacity are required' });
   try {
-    const { id, champ } = await repo.createChampionship(name, capacity, hasGroups);
+    const { id, champ } = await repo.createChampionship(name, capacity, hasGroups, ligueLinked);
     res.status(201).json(serializeChampionship(id, champ));
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -387,6 +388,12 @@ app.put('/api/championships/:id/draw/matches/:matchId', async (req, res) => {
 
     m.result = result;
     await repo.saveChampionshipState(id, champ);
+
+    const isComplete = champ.draw.completedMatches === champ.draw.matches.size;
+    if (champ.ligueLinked && !champ.ligueSynced && isComplete) {
+      await repo.syncChampionshipToLigue(id, champ);
+    }
+
     res.json(serializePlayOffMatch(m));
   } catch (e) {
     res.status(400).json({ error: e.message });

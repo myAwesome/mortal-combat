@@ -12,7 +12,7 @@ export default function Championships() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ name: '', capacity: '', hasGroups: true })
+  const [form, setForm] = useState({ name: '', capacity: '', hasGroups: true, ligueLinked: false })
   const [creating, setCreating] = useState(false)
 
   const load = () => getChampionships().then(setChamps).finally(() => setLoading(false))
@@ -28,8 +28,9 @@ export default function Championships() {
         name: form.name.trim(),
         capacity: Number(form.capacity),
         hasGroups: form.hasGroups,
+        ligueLinked: form.ligueLinked,
       })
-      setForm({ name: '', capacity: '', hasGroups: true })
+      setForm({ name: '', capacity: '', hasGroups: true, ligueLinked: false })
       setShowForm(false)
       await load()
     } catch (err) {
@@ -100,6 +101,15 @@ export default function Championships() {
               />
               <label htmlFor="hasGroups" style={{ fontSize: '0.875rem' }}>Group stage</label>
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', paddingBottom: '2px' }}>
+              <input
+                type="checkbox"
+                id="ligueLinked"
+                checked={form.ligueLinked}
+                onChange={(e) => setForm((f) => ({ ...f, ligueLinked: e.target.checked }))}
+              />
+              <label htmlFor="ligueLinked" style={{ fontSize: '0.875rem' }}>Add to Ligue</label>
+            </div>
             <button
               type="submit"
               className="btn"
@@ -121,6 +131,7 @@ export default function Championships() {
                 <th>Name</th>
                 <th>Capacity</th>
                 <th>Format</th>
+                <th>Ligue</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -138,6 +149,9 @@ export default function Championships() {
                     <td style={{ color: 'var(--color-text-muted)' }}>{c.capacity}</td>
                     <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
                       {c.hasGroups ? 'Groups + Playoff' : 'Playoff only'}
+                    </td>
+                    <td style={{ fontSize: '0.8rem' }}>
+                      {c.ligueLinked ? <StatusBadge status="Ligue" /> : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
                     </td>
                     <td>
                       <StatusBadge status={STAGE_LABELS[stage] || stage} />
