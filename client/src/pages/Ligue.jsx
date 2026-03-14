@@ -95,11 +95,11 @@ export default function Ligue() {
               </thead>
               <tbody>
                 {ranking.map((row) => (
-                  <tr key={row.player}>
+                  <tr key={row.player?.name ?? row.player}>
                     <td style={{ width: '48px', fontWeight: 700, color: row.place <= 3 ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
                       {row.place}
                     </td>
-                    <td style={{ fontWeight: 500 }}>{row.player}</td>
+                    <td style={{ fontWeight: 500 }}>{row.player?.name ?? row.player}</td>
                     <td style={{ fontWeight: 600, color: 'var(--color-primary)' }}>{row.points}</td>
                     <td style={{ color: 'var(--color-text-muted)' }}>{row.champsPlayed}</td>
                   </tr>
