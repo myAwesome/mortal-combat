@@ -51,9 +51,10 @@ const serializeChampionship = (id, c) => ({
   name: c.name,
   capacity: c.capacity,
   hasGroups: c.hasGroups,
-  ligueLinked: c.ligueLinked || false,
+  ligueId: c.ligueId || null,
+  pointsConfig: c.points ? { playoff: c.points, group: c.groupPoints } : null,
   players: c.players
-    ? c.players.map((cp) => ({ name: cp.player.name, points: cp.points }))
+    ? c.players.map((cp) => ({ id: cp.player?.id, name: cp.player?.name, points: cp.points }))
     : null,
   groups: c.groups.map(serializeGroup),
   draw: c.draw
@@ -120,6 +121,126 @@ app.delete('/api/players/:id', async (req, res) => {
   }
 });
 
+// ── Ligues ────────────────────────────────────────────────────────────────────
+
+app.get('/api/ligues', async (_req, res) => {
+  try {
+    const list = await repo.getAllLigues();
+    res.json(list);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/ligues', async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'name is required' });
+  try {
+    const ligue = await repo.createLigue(name);
+    res.status(201).json(ligue);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/ligues/:id', async (req, res) => {
+  try {
+    const ligue = await repo.getLigueById(req.params.id);
+    if (!ligue) return res.status(404).json({ error: 'Ligue not found' });
+    res.json(ligue);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/ligues/:id', async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'name is required' });
+  try {
+    const ligue = await repo.updateLigue(req.params.id, name);
+    if (!ligue) return res.status(404).json({ error: 'Ligue not found' });
+    res.json(ligue);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/ligues/:id', async (req, res) => {
+  try {
+    const deleted = await repo.deleteLigue(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Ligue not found' });
+    res.status(204).send();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/ligues/:id/ranking
+app.get('/api/ligues/:id/ranking', async (req, res) => {
+  try {
+    const ligue = await repo.getLigueById(req.params.id);
+    if (!ligue) return res.status(404).json({ error: 'Ligue not found' });
+    const playersMap = await repo.loadPlayersMap();
+    const list = await repo.getAllLiguePlayers(req.params.id, playersMap);
+    const ranking = new RankingBuilder().build(list.map(({ lp }) => lp));
+    res.json(ranking);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/ligues/:id/players
+app.get('/api/ligues/:id/players', async (req, res) => {
+  try {
+    const ligue = await repo.getLigueById(req.params.id);
+    if (!ligue) return res.status(404).json({ error: 'Ligue not found' });
+    const playersMap = await repo.loadPlayersMap();
+    const list = await repo.getAllLiguePlayers(req.params.id, playersMap);
+    res.json(list.map(({ id, lp }) => ({
+      id,
+      name: lp.player.name,
+      points: lp.points,
+      champsPlayed: lp.champs.length,
+      champs: lp.champs,
+    })));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/ligues/:id/players  { playerId }
+app.post('/api/ligues/:id/players', async (req, res) => {
+  const { playerId } = req.body;
+  if (!playerId) return res.status(400).json({ error: 'playerId is required' });
+  try {
+    const ligue = await repo.getLigueById(req.params.id);
+    if (!ligue) return res.status(404).json({ error: 'Ligue not found' });
+
+    const p = await repo.getPlayerRow(String(playerId));
+    if (!p) return res.status(404).json({ error: 'Player not found' });
+
+    const existingId = await repo.findLiguePlayerByPlayerId(String(playerId), req.params.id);
+    if (existingId)
+      return res.status(409).json({ error: 'Player already in ligue', id: existingId });
+
+    const id = await repo.createLiguePlayer(String(playerId), req.params.id);
+    res.status(201).json({ id, name: p.name, points: 0, champsPlayed: 0, champs: [] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /api/ligues/:id/players/:playerId
+app.delete('/api/ligues/:id/players/:playerId', async (req, res) => {
+  try {
+    const deleted = await repo.deleteLiguePlayer(req.params.playerId);
+    if (!deleted) return res.status(404).json({ error: 'Ligue player not found' });
+    res.status(204).send();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── Championships ─────────────────────────────────────────────────────────────
 
 app.get('/api/championships', async (_req, res) => {
@@ -133,10 +254,10 @@ app.get('/api/championships', async (_req, res) => {
 });
 
 app.post('/api/championships', async (req, res) => {
-  const { name, capacity, hasGroups = true, ligueLinked = false } = req.body;
+  const { name, capacity, hasGroups = true, ligueId = null, pointsConfig = null } = req.body;
   if (!name || !capacity) return res.status(400).json({ error: 'name and capacity are required' });
   try {
-    const { id, champ } = await repo.createChampionship(name, capacity, hasGroups, ligueLinked);
+    const { id, champ } = await repo.createChampionship(name, capacity, hasGroups, ligueId, pointsConfig);
     res.status(201).json(serializeChampionship(id, champ));
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -390,108 +511,13 @@ app.put('/api/championships/:id/draw/matches/:matchId', async (req, res) => {
     await repo.saveChampionshipState(id, champ);
 
     const isComplete = champ.draw.completedMatches === champ.draw.matches.size;
-    if (champ.ligueLinked && !champ.ligueSynced && isComplete) {
+    if (champ.ligueId && !champ.ligueSynced && isComplete) {
       await repo.syncChampionshipToLigue(id, champ);
     }
 
     res.json(serializePlayOffMatch(m));
   } catch (e) {
     res.status(400).json({ error: e.message });
-  }
-});
-
-// ── Ligue players ─────────────────────────────────────────────────────────────
-
-app.get('/api/ligue', async (_req, res) => {
-  try {
-    const playersMap = await repo.loadPlayersMap();
-    const list = await repo.getAllLiguePlayers(playersMap);
-    const ranking = new RankingBuilder().build(list.map(({ lp }) => lp));
-    res.json(ranking);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-app.get('/api/ligue/players', async (_req, res) => {
-  try {
-    const playersMap = await repo.loadPlayersMap();
-    const list = await repo.getAllLiguePlayers(playersMap);
-    res.json(list.map(({ id, lp }) => ({
-      id,
-      name: lp.player.name,
-      points: lp.points,
-      champsPlayed: lp.champs.length,
-      champs: lp.champs,
-    })));
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-app.post('/api/ligue/players', async (req, res) => {
-  const { playerId } = req.body;
-  if (!playerId) return res.status(400).json({ error: 'playerId is required' });
-  try {
-    const p = await repo.getPlayerRow(String(playerId));
-    if (!p) return res.status(404).json({ error: 'Player not found' });
-
-    const existingId = await repo.findLiguePlayerByPlayerId(String(playerId));
-    if (existingId)
-      return res.status(409).json({ error: 'Player already in ligue', id: existingId });
-
-    const id = await repo.createLiguePlayer(String(playerId));
-    res.status(201).json({ id, name: p.name, points: 0, champsPlayed: 0, champs: [] });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-app.get('/api/ligue/players/:id', async (req, res) => {
-  try {
-    const playersMap = await repo.loadPlayersMap();
-    const found = await repo.getLiguePlayerById(req.params.id, playersMap);
-    if (!found) return res.status(404).json({ error: 'Ligue player not found' });
-    const { id, lp } = found;
-    res.json({ id, name: lp.player.name, points: lp.points, champsPlayed: lp.champs.length, champs: lp.champs });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// PUT /api/ligue/players/:id  { points?: number, champId?: string }
-app.put('/api/ligue/players/:id', async (req, res) => {
-  try {
-    const playersMap = await repo.loadPlayersMap();
-    const found = await repo.getLiguePlayerById(req.params.id, playersMap);
-    if (!found) return res.status(404).json({ error: 'Ligue player not found' });
-
-    const { points: pts, champId } = req.body;
-
-    if (pts !== undefined) {
-      await repo.updateLiguePlayerPoints(req.params.id, pts);
-    }
-    if (champId !== undefined) {
-      const champName = await repo.getChampionshipName(String(champId));
-      if (!champName) return res.status(404).json({ error: 'Championship not found' });
-      await repo.appendLiguePlayerChamp(req.params.id, champName);
-    }
-
-    const updated = await repo.getLiguePlayerById(req.params.id, playersMap);
-    const { id, lp } = updated;
-    res.json({ id, name: lp.player.name, points: lp.points, champsPlayed: lp.champs.length, champs: lp.champs });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-
-app.delete('/api/ligue/players/:id', async (req, res) => {
-  try {
-    const deleted = await repo.deleteLiguePlayer(req.params.id);
-    if (!deleted) return res.status(404).json({ error: 'Ligue player not found' });
-    res.status(204).send();
-  } catch (e) {
-    res.status(500).json({ error: e.message });
   }
 });
 

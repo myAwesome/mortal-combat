@@ -4,7 +4,8 @@ import Dashboard from './pages/Dashboard'
 import Players from './pages/Players'
 import Championships from './pages/Championships'
 import ChampionshipDetail from './pages/ChampionshipDetail'
-import Ligue from './pages/Ligue'
+import Ligues from './pages/Ligues'
+import LigueDetail from './pages/LigueDetail'
 import './App.css'
 
 export default function App() {
@@ -17,7 +18,8 @@ export default function App() {
           <Route path="/players" element={<Players />} />
           <Route path="/championships" element={<Championships />} />
           <Route path="/championships/:id" element={<ChampionshipDetail />} />
-          <Route path="/ligue" element={<Ligue />} />
+          <Route path="/ligues" element={<Ligues />} />
+          <Route path="/ligues/:id" element={<LigueDetail />} />
         </Routes>
       </main>
     </BrowserRouter>

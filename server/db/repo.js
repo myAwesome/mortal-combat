@@ -9,7 +9,7 @@ const { Draw } = require('../../domain/models/Draw');
 const { PlayOffPlayer } = require('../../domain/models/PlayOffPlayer');
 const { LiguePlayer } = require('../../domain/models/LiguePlayer');
 const { TennisSet } = require('../../domain/models/TennisSet');
-const { points, groupPoints } = require('../../domain/models/mocks');
+const { points: defaultPoints, groupPoints: defaultGroupPoints } = require('../../domain/models/mocks');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -86,10 +86,12 @@ function serializeChampionshipState(champ) {
 
 function deserializeChampionshipState(row, playersMap) {
   const champ = new Championship(row.name, row.capacity, !!row.has_groups);
-  champ.ligueLinked = !!row.ligue_linked;
+  champ.ligueId = row.ligue_id ? String(row.ligue_id) : null;
   champ.ligueSynced = !!row.ligue_synced;
-  champ.points = points;
-  champ.groupPoints = groupPoints;
+
+  const config = row.points_config_json ? JSON.parse(row.points_config_json) : null;
+  champ.points = config ? config.playoff : defaultPoints;
+  champ.groupPoints = config ? config.group : defaultGroupPoints;
 
   if (!row.state_json) return champ;
 
@@ -116,7 +118,6 @@ function deserializeChampionshipState(row, playersMap) {
         gp.groupMetadata.group = sp.group;
         return gp;
       });
-      // Index GroupPlayers by player id for match reconstruction
       const gpById = new Map(sg.players.map((sp, i) => [String(sp.id), g.players[i]]));
       g.matches = sg.matches.map(sm => {
         const gm = new GroupMatch({
@@ -124,7 +125,6 @@ function deserializeChampionshipState(row, playersMap) {
           player2: gpById.get(String(sm.p2Id)),
         });
         if (sm.result) {
-          // Bypass setter to avoid triggering side effects during reconstruction
           gm.__result = new TennisSet(sm.result);
           gm.winner = gm.__result.p1Wins() ? gm.player1 : gm.player2;
           gm.loser = gm.__result.p1Wins() ? gm.player2 : gm.player1;
@@ -138,7 +138,6 @@ function deserializeChampionshipState(row, playersMap) {
 
   if (state.draw) {
     const sd = state.draw;
-    // Recreate the match graph using existing domain logic
     const draw = new Draw(sd.capacity, champ);
     draw.createMatches(sd.capacity);
     draw.qualifiers = sd.qualifiers;
@@ -146,7 +145,6 @@ function deserializeChampionshipState(row, playersMap) {
     draw.completedMatches = sd.completedMatches;
     draw.placesPriority = sd.placesPriority;
 
-    // Fill in player assignments and results without side effects
     for (const [matchId, sm] of Object.entries(sd.matches)) {
       const m = draw.matches.get(matchId);
       if (!m) continue;
@@ -217,7 +215,7 @@ async function deletePlayer(id) {
 
 async function getAllChampionships(playersMap) {
   const [rows] = await db.query(
-    'SELECT id, name, capacity, has_groups, ligue_linked, ligue_synced, state_json FROM championships'
+    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, state_json FROM championships'
   );
   return rows.map(r => ({
     id: String(r.id),
@@ -227,7 +225,7 @@ async function getAllChampionships(playersMap) {
 
 async function getChampionshipById(id, playersMap) {
   const [rows] = await db.query(
-    'SELECT id, name, capacity, has_groups, ligue_linked, ligue_synced, state_json FROM championships WHERE id = ?',
+    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, state_json FROM championships WHERE id = ?',
     [id]
   );
   if (!rows[0]) return null;
@@ -239,16 +237,17 @@ async function getChampionshipName(id) {
   return rows[0] ? rows[0].name : null;
 }
 
-async function createChampionship(name, capacity, hasGroups, ligueLinked = false) {
+async function createChampionship(name, capacity, hasGroups, ligueId = null, pointsConfig = null) {
+  const configJson = pointsConfig ? JSON.stringify(pointsConfig) : null;
   const [result] = await db.query(
-    'INSERT INTO championships (name, capacity, has_groups, ligue_linked) VALUES (?, ?, ?, ?)',
-    [name, capacity, hasGroups ? 1 : 0, ligueLinked ? 1 : 0]
+    'INSERT INTO championships (name, capacity, has_groups, ligue_id, points_config_json) VALUES (?, ?, ?, ?, ?)',
+    [name, capacity, hasGroups ? 1 : 0, ligueId || null, configJson]
   );
   const id = String(result.insertId);
   const champ = new Championship(name, capacity, hasGroups);
-  champ.points = points;
-  champ.groupPoints = groupPoints;
-  champ.ligueLinked = ligueLinked;
+  champ.points = pointsConfig ? pointsConfig.playoff : defaultPoints;
+  champ.groupPoints = pointsConfig ? pointsConfig.group : defaultGroupPoints;
+  champ.ligueId = ligueId ? String(ligueId) : null;
   champ.ligueSynced = false;
   return { id, champ };
 }
@@ -280,6 +279,33 @@ async function deleteChampionship(id) {
   return result.affectedRows > 0;
 }
 
+// ── Ligues ────────────────────────────────────────────────────────────────────
+
+async function getAllLigues() {
+  const [rows] = await db.query('SELECT id, name FROM ligues');
+  return rows.map(r => ({ id: String(r.id), name: r.name }));
+}
+
+async function getLigueById(id) {
+  const [rows] = await db.query('SELECT id, name FROM ligues WHERE id = ?', [id]);
+  return rows[0] ? { id: String(rows[0].id), name: rows[0].name } : null;
+}
+
+async function createLigue(name) {
+  const [result] = await db.query('INSERT INTO ligues (name) VALUES (?)', [name]);
+  return { id: String(result.insertId), name };
+}
+
+async function updateLigue(id, name) {
+  const [result] = await db.query('UPDATE ligues SET name = ? WHERE id = ?', [name, id]);
+  return result.affectedRows > 0 ? { id: String(id), name } : null;
+}
+
+async function deleteLigue(id) {
+  const [result] = await db.query('DELETE FROM ligues WHERE id = ?', [id]);
+  return result.affectedRows > 0;
+}
+
 // ── Ligue players ─────────────────────────────────────────────────────────────
 
 function makeLiguePlayer(row, playersMap) {
@@ -290,9 +316,10 @@ function makeLiguePlayer(row, playersMap) {
   return lp;
 }
 
-async function getAllLiguePlayers(playersMap) {
+async function getAllLiguePlayers(ligueId, playersMap) {
   const [rows] = await db.query(
-    'SELECT id, player_id, points, champs_json FROM ligue_players'
+    'SELECT id, player_id, points, champs_json FROM ligue_players WHERE ligue_id = ?',
+    [ligueId]
   );
   return rows.map(r => ({ id: String(r.id), lp: makeLiguePlayer(r, playersMap) }));
 }
@@ -306,18 +333,18 @@ async function getLiguePlayerById(id, playersMap) {
   return { id: String(rows[0].id), lp: makeLiguePlayer(rows[0], playersMap) };
 }
 
-async function findLiguePlayerByPlayerId(playerId) {
+async function findLiguePlayerByPlayerId(playerId, ligueId) {
   const [rows] = await db.query(
-    'SELECT id FROM ligue_players WHERE player_id = ?',
-    [playerId]
+    'SELECT id FROM ligue_players WHERE player_id = ? AND ligue_id = ?',
+    [playerId, ligueId]
   );
   return rows[0] ? String(rows[0].id) : null;
 }
 
-async function createLiguePlayer(playerId) {
+async function createLiguePlayer(playerId, ligueId) {
   const [result] = await db.query(
-    "INSERT INTO ligue_players (player_id, points, champs_json) VALUES (?, 0, '[]')",
-    [playerId]
+    "INSERT INTO ligue_players (player_id, ligue_id, points, champs_json) VALUES (?, ?, 0, '[]')",
+    [playerId, ligueId]
   );
   return String(result.insertId);
 }
@@ -345,8 +372,9 @@ async function appendLiguePlayerChamp(id, champName) {
 }
 
 async function syncChampionshipToLigue(champId, champ) {
+  if (!champ.ligueId) return;
   for (const cp of champ.players) {
-    const liguePlayerId = await findLiguePlayerByPlayerId(cp.player.id);
+    const liguePlayerId = await findLiguePlayerByPlayerId(cp.player.id, champ.ligueId);
     if (!liguePlayerId) continue;
     await updateLiguePlayerPoints(liguePlayerId, cp.points);
     await appendLiguePlayerChamp(liguePlayerId, champ.name);
@@ -365,6 +393,7 @@ async function truncateAll() {
   await db.query('SET FOREIGN_KEY_CHECKS = 0');
   await db.query('TRUNCATE TABLE ligue_players');
   await db.query('TRUNCATE TABLE championships');
+  await db.query('TRUNCATE TABLE ligues');
   await db.query('TRUNCATE TABLE players');
   await db.query('SET FOREIGN_KEY_CHECKS = 1');
 }
@@ -383,6 +412,11 @@ module.exports = {
   updateChampionshipFields,
   saveChampionshipState,
   deleteChampionship,
+  getAllLigues,
+  getLigueById,
+  createLigue,
+  updateLigue,
+  deleteLigue,
   getAllLiguePlayers,
   getLiguePlayerById,
   findLiguePlayerByPlayerId,
