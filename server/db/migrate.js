@@ -13,9 +13,13 @@ async function migrate() {
       name VARCHAR(255) NOT NULL,
       capacity INT NOT NULL,
       has_groups TINYINT(1) NOT NULL DEFAULT 1,
+      ligue_linked TINYINT(1) NOT NULL DEFAULT 0,
+      ligue_synced TINYINT(1) NOT NULL DEFAULT 0,
       state_json LONGTEXT
     ) ENGINE=InnoDB
   `);
+  await db.execute(`ALTER TABLE championships ADD COLUMN IF NOT EXISTS ligue_linked TINYINT(1) NOT NULL DEFAULT 0`);
+  await db.execute(`ALTER TABLE championships ADD COLUMN IF NOT EXISTS ligue_synced TINYINT(1) NOT NULL DEFAULT 0`);
   await db.execute(`
     CREATE TABLE IF NOT EXISTS ligue_players (
       id INT AUTO_INCREMENT PRIMARY KEY,

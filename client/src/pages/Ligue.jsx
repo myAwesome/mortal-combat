@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { getLigueRanking, getLiguePlayers, addLiguePlayer, removeLiguePlayer, updateLiguePlayer } from '../api/ligue'
+import { getLigueRanking, getLiguePlayers, addLiguePlayer, removeLiguePlayer } from '../api/ligue'
 import { getPlayers } from '../api/players'
-import { getChampionships } from '../api/championships'
 import Spinner from '../components/Spinner'
 import ErrorMessage from '../components/ErrorMessage'
 import ConfirmButton from '../components/ConfirmButton'
@@ -10,24 +9,18 @@ export default function Ligue() {
   const [ranking, setRanking] = useState([])
   const [liguePlayers, setLiguePlayers] = useState([])
   const [allPlayers, setAllPlayers] = useState([])
-  const [championships, setChampionships] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedId, setSelectedId] = useState('')
   const [adding, setAdding] = useState(false)
   const [tab, setTab] = useState('ranking')
-  const [champLiguePlayerId, setChampLiguePlayerId] = useState('')
-  const [champId, setChampId] = useState('')
-  const [champPoints, setChampPoints] = useState('')
-  const [addingChamp, setAddingChamp] = useState(false)
 
   const load = () =>
-    Promise.all([getLigueRanking(), getLiguePlayers(), getPlayers(), getChampionships()])
-      .then(([r, lp, ap, ch]) => {
+    Promise.all([getLigueRanking(), getLiguePlayers(), getPlayers()])
+      .then(([r, lp, ap]) => {
         setRanking(r)
         setLiguePlayers(lp)
         setAllPlayers(ap)
-        setChampionships(ch)
       })
       .finally(() => setLoading(false))
 
@@ -48,25 +41,6 @@ export default function Ligue() {
       setError(err)
     } finally {
       setAdding(false)
-    }
-  }
-
-  const handleAddChamp = async () => {
-    if (!champLiguePlayerId || !champId) return
-    setAddingChamp(true)
-    setError(null)
-    try {
-      const data = { champId: Number(champId) }
-      if (champPoints !== '') data.points = Number(champPoints)
-      await updateLiguePlayer(Number(champLiguePlayerId), data)
-      setChampLiguePlayerId('')
-      setChampId('')
-      setChampPoints('')
-      await load()
-    } catch (err) {
-      setError(err)
-    } finally {
-      setAddingChamp(false)
     }
   }
 
@@ -157,48 +131,6 @@ export default function Ligue() {
                   disabled={adding || !selectedId}
                 >
                   {adding ? 'Adding…' : 'Add to Ligue'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {liguePlayers.length > 0 && championships.length > 0 && (
-            <div className="card" style={{ marginBottom: '1rem' }}>
-              <h3 style={{ marginTop: 0, marginBottom: '0.75rem', fontSize: '0.95rem' }}>Add Championship to Player</h3>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <select
-                  value={champLiguePlayerId}
-                  onChange={(e) => setChampLiguePlayerId(e.target.value)}
-                  style={{ flexGrow: 1, maxWidth: '200px' }}
-                >
-                  <option value="">Select player…</option>
-                  {liguePlayers.map((lp) => (
-                    <option key={lp.id} value={lp.id}>{lp.name}</option>
-                  ))}
-                </select>
-                <select
-                  value={champId}
-                  onChange={(e) => setChampId(e.target.value)}
-                  style={{ flexGrow: 1, maxWidth: '200px' }}
-                >
-                  <option value="">Select championship…</option>
-                  {championships.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  placeholder="Points (optional)"
-                  value={champPoints}
-                  onChange={(e) => setChampPoints(e.target.value)}
-                  style={{ width: '140px' }}
-                />
-                <button
-                  className="btn"
-                  onClick={handleAddChamp}
-                  disabled={addingChamp || !champLiguePlayerId || !champId}
-                >
-                  {addingChamp ? 'Adding…' : 'Add Championship'}
                 </button>
               </div>
             </div>
