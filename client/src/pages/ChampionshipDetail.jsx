@@ -10,6 +10,73 @@ import DrawStep from '../features/championship/DrawStep'
 import Spinner from '../components/Spinner'
 import ErrorMessage from '../components/ErrorMessage'
 
+function formatPlaceLabel(place) {
+  const mod100 = place % 100
+  if (mod100 >= 11 && mod100 <= 13) return `${place}th place`
+
+  const mod10 = place % 10
+  if (mod10 === 1) return `${place}st place`
+  if (mod10 === 2) return `${place}nd place`
+  if (mod10 === 3) return `${place}rd place`
+  return `${place}th place`
+}
+
+function getRoundLossLabel(playersInRound) {
+  if (playersInRound === 4) return 'S'
+  if (playersInRound === 8) return 'Q'
+  return `R${playersInRound}`
+}
+
+function buildResultByPlayer(champ) {
+  const resultByName = new Map()
+  const matches = champ.draw?.matches || []
+
+  const isRealPlayer = (name) => name && name.toLowerCase() !== 'bye'
+
+  matches.forEach((match) => {
+    const winner = match.winner?.name
+    const p1 = match.player1?.name
+    const p2 = match.player2?.name
+
+    if (!isRealPlayer(winner)) return
+
+    const loser = [p1, p2].find((name) => isRealPlayer(name) && name !== winner)
+
+    if (match.prize === 1 && match.playersInRound > 2 && loser && !resultByName.has(loser)) {
+      resultByName.set(loser, getRoundLossLabel(match.playersInRound))
+    }
+
+    if (match.prize === 1 && match.playersInRound === 2) {
+      resultByName.set(winner, 'W')
+      if (loser) resultByName.set(loser, 'F')
+      return
+    }
+
+    if (match.prize === 3 && match.playersInRound === 2) {
+      resultByName.set(winner, '3rd place')
+      if (loser) resultByName.set(loser, 'S')
+      return
+    }
+
+    if (match.prize > 3 && match.playersInRound === 2) {
+      resultByName.set(winner, formatPlaceLabel(match.prize))
+      if (loser) resultByName.set(loser, formatPlaceLabel(match.prize + 1))
+    }
+  })
+
+  if (champ.hasGroups && champ.groups?.length > 0) {
+    champ.groups.forEach((group) => {
+      group.players.forEach((player) => {
+        if (player.place > 2 && !resultByName.has(player.name)) {
+          resultByName.set(player.name, 'RR')
+        }
+      })
+    })
+  }
+
+  return resultByName
+}
+
 export default function ChampionshipDetail() {
   const { id } = useParams()
   const [champ, setChamp] = useState(null)
@@ -33,6 +100,7 @@ export default function ChampionshipDetail() {
 
   const stage = deriveStage(champ)
   const sortedByPoints = [...(champ.players || [])].sort((a, b) => (b.points || 0) - (a.points || 0))
+  const resultByPlayer = buildResultByPlayer(champ)
 
   return (
     <div>
@@ -127,6 +195,7 @@ export default function ChampionshipDetail() {
                     <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
                       <th style={{ padding: '0.5rem' }}>#</th>
                       <th style={{ padding: '0.5rem' }}>Player</th>
+                      <th style={{ padding: '0.5rem' }}>Result</th>
                       <th style={{ padding: '0.5rem', textAlign: 'right' }}>Points</th>
                     </tr>
                   </thead>
@@ -135,6 +204,7 @@ export default function ChampionshipDetail() {
                       <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                         <td style={{ padding: '0.5rem' }}>{idx + 1}</td>
                         <td style={{ padding: '0.5rem' }}>{p.name}</td>
+                        <td style={{ padding: '0.5rem' }}>{resultByPlayer.get(p.name) || '-'}</td>
                         <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>{p.points || 0}</td>
                       </tr>
                     ))}
