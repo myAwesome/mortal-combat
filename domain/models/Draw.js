@@ -52,6 +52,7 @@ class Draw {
       stage: DRAW_MAP[capacity * 2],
       matchNumberInRound: matchNum * 2,
       playersInRound: capacity * 2,
+      setsToWin: this.champ?.setsToWin ?? 1,
     });
   };
 
@@ -64,6 +65,7 @@ class Draw {
       matchNumberInRound: Math.ceil(m.matchNumberInRound / 2),
       playersInRound: m.playersInRound / 2,
       draw: this,
+      setsToWin: this.champ?.setsToWin ?? 1,
     });
 
     currentMatch.id = this.getMatchId(currentMatch);

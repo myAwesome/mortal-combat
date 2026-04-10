@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { recordGroupMatch } from '../../api/championships'
+import { getScorePlaceholder, isScoreInputShapeValid } from './scoreFormat'
 import './GroupCard.css'
 
-function ResultInput({ onSubmit, disabled }) {
+function ResultInput({ onSubmit, disabled, setsToWin }) {
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!/^\d+-\d+$/.test(value.trim())) {
-      setError('Format: 6-4')
+    if (!isScoreInputShapeValid(value, setsToWin)) {
+      setError(`Некоректний формат. Приклад: ${getScorePlaceholder(setsToWin)}`)
       return
     }
     setError('')
@@ -22,8 +23,8 @@ function ResultInput({ onSubmit, disabled }) {
       <input
         value={value}
         onChange={(e) => { setValue(e.target.value); setError('') }}
-        placeholder="6-4"
-        maxLength={7}
+        placeholder={getScorePlaceholder(setsToWin)}
+        maxLength={31}
         disabled={disabled}
       />
       <button type="submit" className="btn btn-sm" disabled={disabled || !value.trim()}>
@@ -112,6 +113,7 @@ export default function GroupCard({ champ, group, onDone }) {
                 <ResultInput
                   onSubmit={(result) => handleResult(m.id, result)}
                   disabled={saving === m.id}
+                  setsToWin={champ.setsToWin || 1}
                 />
               )}
             </div>

@@ -5,6 +5,7 @@ const { Match } = require("../models/Match");
 const { GroupMatch } = require("../models/GroupMatch");
 const { PlayOffMatch } = require("../models/PlayOffMatch");
 const { Draw } = require("../models/Draw");
+const { TennisSet } = require("../models/TennisSet");
 
 describe("Match", () => {
   test("winner and loser are set correctly", () => {
@@ -14,6 +15,25 @@ describe("Match", () => {
     match.result = "6-1";
     expect(match.winner).toBe(federer);
     expect(match.loser).toBe(nadal);
+  });
+
+  test("best of three match uses set winner, not total games", () => {
+    const federer = new Player("Federer");
+    const nadal = new Player("Nadal");
+    const match = new Match({ player1: federer, player2: nadal, setsToWin: 2 });
+    match.result = "6-0 0-6 7-6";
+    expect(match.winner).toBe(federer);
+    expect(match.loser).toBe(nadal);
+  });
+});
+
+describe("TennisSet", () => {
+  test("rejects unfinished best-of-three score", () => {
+    expect(() => new TennisSet("6-4", 2)).toThrow();
+  });
+
+  test("rejects extra set after match is already decided", () => {
+    expect(() => new TennisSet("6-4 6-4 0-6", 2)).toThrow();
   });
 });
 

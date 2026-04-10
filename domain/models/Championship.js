@@ -12,10 +12,14 @@ const groupNames = [
 const BYE_PLAYER_NAME = "bye";
 
 class Championship {
-  constructor(name, capacity, hasGroups = true) {
+  constructor(name, capacity, hasGroups = true, setsToWin = 1) {
+    if (![1, 2, 3].includes(Number(setsToWin))) {
+      throw new Error("setsToWin must be 1, 2 or 3");
+    }
     this.name = name;
     this.capacity = capacity;
     this.hasGroups = hasGroups;
+    this.setsToWin = Number(setsToWin);
     this.players = null;
     this.points = null;
     this.groupPoints = null;
@@ -49,7 +53,7 @@ class Championship {
     });
 
     this.groupsLength = this.groups.length;
-    this.groups.forEach(group => group.createMatches());
+    this.groups.forEach(group => group.createMatches(this.setsToWin));
   };
 
   // Point Assignment

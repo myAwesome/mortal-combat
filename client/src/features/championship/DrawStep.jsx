@@ -98,7 +98,7 @@ export default function DrawStep({ champ, onDone }) {
         </div>
       )}
 
-      <PlayoffBracket draw={champ.draw} champId={champ.id} onDone={onDone} />
+      <PlayoffBracket draw={champ.draw} champId={champ.id} onDone={onDone} setsToWin={champ.setsToWin || 1} />
     </div>
   )
 }

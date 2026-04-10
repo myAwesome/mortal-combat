@@ -14,7 +14,7 @@ function formatPlaceLabel(place) {
   return `${place}th Place`
 }
 
-export default function PlayoffBracket({ draw, champId, onDone }) {
+export default function PlayoffBracket({ draw, champId, onDone, setsToWin = 1 }) {
   const mainRounds = buildBracket(draw.matches, { prize: 1 })
   const thirdPlaceFinal = draw.matches.find((m) => m.prize === 3 && m.playersInRound === 2)
   const placementPrizes = useMemo(
@@ -50,7 +50,7 @@ export default function PlayoffBracket({ draw, champId, onDone }) {
             <div className="bracket-round-header">{round.label}</div>
             {round.matches.map((match) => (
               <div key={match.id} className="bracket-match-slot">
-                <BracketMatch match={match} champId={champId} onDone={onDone} />
+                <BracketMatch match={match} champId={champId} onDone={onDone} setsToWin={setsToWin} />
               </div>
             ))}
           </div>
@@ -101,7 +101,7 @@ export default function PlayoffBracket({ draw, champId, onDone }) {
               <div className="bracket-round-header" style={{ marginBottom: '0.5rem' }}>
                 3rd Place Final
               </div>
-              <BracketMatch match={thirdPlaceFinal} champId={champId} onDone={onDone} />
+              <BracketMatch match={thirdPlaceFinal} champId={champId} onDone={onDone} setsToWin={setsToWin} />
             </div>
           )}
         </>

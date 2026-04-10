@@ -33,13 +33,14 @@ class Group {
     return 0;
   };
 
-  createMatches = () => {
+  createMatches = (setsToWin = 1) => {
     const capacity = this.players.length;
     this.players.forEach((player, key) => {
       for (let opponent_id = key + 1; opponent_id < capacity; opponent_id++) {
         const match = new GroupMatch({
           player1: player,
           player2: this.players[opponent_id],
+          setsToWin,
         });
         this.matches.push(match);
       }

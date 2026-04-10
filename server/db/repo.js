@@ -53,7 +53,7 @@ function serializeChampionshipState(champ) {
       matches: g.matches.map(m => ({
         p1Id: m.player1.player.id,
         p2Id: m.player2.player.id,
-        result: m.result ? `${m.result.p1}-${m.result.p2}` : null,
+        result: m.result ? m.result.toString() : null,
       })),
     }));
   }
@@ -66,7 +66,7 @@ function serializeChampionshipState(champ) {
         player1IsBye: m.player1 ? m.player1.isBye : false,
         player2Id: m.player2 && !m.player2.isBye ? m.player2.player.id : null,
         player2IsBye: m.player2 ? m.player2.isBye : false,
-        result: m.result ? `${m.result.p1}-${m.result.p2}` : null,
+        result: m.result ? m.result.toString() : null,
         winnerId: m.winner && !m.winner.isBye ? m.winner.player.id : null,
         loserId: m.loser && !m.loser.isBye ? m.loser.player.id : null,
       };
@@ -85,7 +85,8 @@ function serializeChampionshipState(champ) {
 }
 
 function deserializeChampionshipState(row, playersMap) {
-  const champ = new Championship(row.name, row.capacity, !!row.has_groups);
+  const setsToWin = row.sets_to_win ? Number(row.sets_to_win) : 1;
+  const champ = new Championship(row.name, row.capacity, !!row.has_groups, setsToWin);
   champ.ligueId = row.ligue_id ? String(row.ligue_id) : null;
   champ.ligueSynced = !!row.ligue_synced;
 
@@ -123,9 +124,10 @@ function deserializeChampionshipState(row, playersMap) {
         const gm = new GroupMatch({
           player1: gpById.get(String(sm.p1Id)),
           player2: gpById.get(String(sm.p2Id)),
+          setsToWin: champ.setsToWin,
         });
         if (sm.result) {
-          gm.__result = new TennisSet(sm.result);
+          gm.__result = new TennisSet(sm.result, champ.setsToWin);
           gm.winner = gm.__result.p1Wins() ? gm.player1 : gm.player2;
           gm.loser = gm.__result.p1Wins() ? gm.player2 : gm.player1;
         }
@@ -162,7 +164,7 @@ function deserializeChampionshipState(row, playersMap) {
       }
 
       if (sm.result) {
-        m.__result = new TennisSet(sm.result);
+        m.__result = new TennisSet(sm.result, champ.setsToWin);
         if (sm.winnerId) {
           const p1IsWinner = m.player1 && !m.player1.isBye &&
             String(m.player1.player.id) === String(sm.winnerId);
@@ -215,7 +217,7 @@ async function deletePlayer(id) {
 
 async function getAllChampionships(playersMap) {
   const [rows] = await db.query(
-    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, state_json FROM championships'
+    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, sets_to_win, state_json FROM championships'
   );
   return rows.map(r => ({
     id: String(r.id),
@@ -225,7 +227,7 @@ async function getAllChampionships(playersMap) {
 
 async function getChampionshipById(id, playersMap) {
   const [rows] = await db.query(
-    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, state_json FROM championships WHERE id = ?',
+    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, sets_to_win, state_json FROM championships WHERE id = ?',
     [id]
   );
   if (!rows[0]) return null;
@@ -237,14 +239,14 @@ async function getChampionshipName(id) {
   return rows[0] ? rows[0].name : null;
 }
 
-async function createChampionship(name, capacity, hasGroups, ligueId = null, pointsConfig = null) {
+async function createChampionship(name, capacity, hasGroups, ligueId = null, pointsConfig = null, setsToWin = 1) {
   const configJson = pointsConfig ? JSON.stringify(pointsConfig) : null;
   const [result] = await db.query(
-    'INSERT INTO championships (name, capacity, has_groups, ligue_id, points_config_json) VALUES (?, ?, ?, ?, ?)',
-    [name, capacity, hasGroups ? 1 : 0, ligueId || null, configJson]
+    'INSERT INTO championships (name, capacity, has_groups, ligue_id, points_config_json, sets_to_win) VALUES (?, ?, ?, ?, ?, ?)',
+    [name, capacity, hasGroups ? 1 : 0, ligueId || null, configJson, Number(setsToWin)]
   );
   const id = String(result.insertId);
-  const champ = new Championship(name, capacity, hasGroups);
+  const champ = new Championship(name, capacity, hasGroups, Number(setsToWin));
   champ.points = pointsConfig ? pointsConfig.playoff : defaultPoints;
   champ.groupPoints = pointsConfig ? pointsConfig.group : defaultGroupPoints;
   champ.ligueId = ligueId ? String(ligueId) : null;
@@ -258,6 +260,7 @@ async function updateChampionshipFields(id, updates) {
   if (updates.name !== undefined)      { parts.push('name = ?');       params.push(updates.name); }
   if (updates.capacity !== undefined)  { parts.push('capacity = ?');   params.push(updates.capacity); }
   if (updates.hasGroups !== undefined) { parts.push('has_groups = ?'); params.push(updates.hasGroups ? 1 : 0); }
+  if (updates.setsToWin !== undefined) { parts.push('sets_to_win = ?'); params.push(Number(updates.setsToWin)); }
   if (parts.length === 0) return true;
   params.push(id);
   const [result] = await db.query(

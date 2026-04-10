@@ -38,6 +38,7 @@ async function migrate() {
   await addColumn(`ALTER TABLE championships ADD COLUMN ligue_synced TINYINT(1) NOT NULL DEFAULT 0`);
   await addColumn(`ALTER TABLE championships ADD COLUMN ligue_id INT NULL`);
   await addColumn(`ALTER TABLE championships ADD COLUMN points_config_json TEXT`);
+  await addColumn(`ALTER TABLE championships ADD COLUMN sets_to_win TINYINT NOT NULL DEFAULT 1`);
   await db.execute(`
     CREATE TABLE IF NOT EXISTS ligue_players (
       id INT AUTO_INCREMENT PRIMARY KEY,
