@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { getPlayers, createPlayer, updatePlayer, deletePlayer } from '../api/players'
 import Spinner from '../components/Spinner'
 import ErrorMessage from '../components/ErrorMessage'
@@ -116,7 +117,9 @@ export default function Players() {
                         </button>
                       </form>
                     ) : (
-                      p.name
+                      <Link to={`/players/${p.id}`} style={{ fontWeight: 500 }}>
+                        {p.name}
+                      </Link>
                     )}
                   </td>
                   <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
