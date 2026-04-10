@@ -2,9 +2,22 @@ import { buildBracket } from './buildBracket'
 import BracketMatch from './BracketMatch'
 import './PlayoffBracket.css'
 
+function formatPlaceLabel(place) {
+  const mod100 = place % 100
+  if (mod100 >= 11 && mod100 <= 13) return `${place}th Place`
+
+  const mod10 = place % 10
+  if (mod10 === 1) return `${place}st Place`
+  if (mod10 === 2) return `${place}nd Place`
+  if (mod10 === 3) return `${place}rd Place`
+  return `${place}th Place`
+}
+
 export default function PlayoffBracket({ draw, champId, onDone }) {
   const rounds = buildBracket(draw.matches)
-  const thirdPlaceMatch = draw.matches.find((m) => m.prize > 1 && m.playersInRound === 2)
+  const placementMatches = draw.matches
+    .filter((m) => m.prize > 1 && m.playersInRound === 2)
+    .sort((a, b) => a.prize - b.prize)
 
   if (rounds.length === 0) {
     return <p style={{ color: 'var(--color-text-muted)' }}>No bracket matches found.</p>
@@ -41,10 +54,16 @@ export default function PlayoffBracket({ draw, champId, onDone }) {
         </div>
       ))}
     </div>
-    {thirdPlaceMatch && (
-      <div style={{ marginTop: '1.5rem' }}>
-        <div className="bracket-round-header" style={{ marginBottom: '0.5rem' }}>3rd Place</div>
-        <BracketMatch match={thirdPlaceMatch} champId={champId} onDone={onDone} />
+    {placementMatches.length > 0 && (
+      <div style={{ marginTop: '1.5rem', display: 'grid', gap: '1rem' }}>
+        {placementMatches.map((match) => (
+          <div key={match.id}>
+            <div className="bracket-round-header" style={{ marginBottom: '0.5rem' }}>
+              {formatPlaceLabel(match.prize)}
+            </div>
+            <BracketMatch match={match} champId={champId} onDone={onDone} />
+          </div>
+        ))}
       </div>
     )}
     </div>
