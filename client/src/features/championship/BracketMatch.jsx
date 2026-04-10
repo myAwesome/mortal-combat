@@ -20,6 +20,7 @@ export default function BracketMatch({ match, champId, onDone }) {
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const winnerName = typeof match.winner === 'string' ? match.winner : match.winner?.name
 
   const canEnterResult =
     !match.result &&
@@ -46,8 +47,8 @@ export default function BracketMatch({ match, champId, onDone }) {
 
   return (
     <div className="bracket-match">
-      <PlayerRow player={match.player1} isWinner={match.winner === match.player1?.name} result={match.result} />
-      <PlayerRow player={match.player2} isWinner={match.winner === match.player2?.name} result={match.result} />
+      <PlayerRow player={match.player1} isWinner={winnerName === match.player1?.name} result={match.result} />
+      <PlayerRow player={match.player2} isWinner={winnerName === match.player2?.name} result={match.result} />
       {canEnterResult && (
         <form className="bracket-result-form" onSubmit={handleSubmit}>
           <input
