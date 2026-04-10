@@ -85,7 +85,7 @@ function PointsConfigForm({ capacity, hasGroups, value, onChange }) {
   )
 }
 
-const emptyForm = { name: '', capacity: '', hasGroups: true, setsToWin: 1, ligueId: '', pointsConfig: null }
+const emptyForm = { name: '', capacity: '', hasGroups: false, setsToWin: 2, ligueId: '', pointsConfig: null }
 
 export default function Championships() {
   const [champs, setChamps] = useState([])
@@ -211,29 +211,6 @@ export default function Championships() {
                   ))}
                 </select>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', paddingBottom: '2px' }}>
-                <input
-                  type="checkbox"
-                  id="hasGroups"
-                  checked={form.hasGroups}
-                  onChange={(e) => setForm((f) => ({ ...f, hasGroups: e.target.checked }))}
-                />
-                <label htmlFor="hasGroups" style={{ fontSize: '0.875rem' }}>Group stage</label>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                  MATCH FORMAT
-                </label>
-                <select
-                  value={form.setsToWin}
-                  onChange={(e) => setForm((f) => ({ ...f, setsToWin: Number(e.target.value) }))}
-                  style={{ width: '150px' }}
-                >
-                  <option value={1}>До 1 сету</option>
-                  <option value={2}>До 2 сетів</option>
-                  <option value={3}>До 3 сетів</option>
-                </select>
-              </div>
               <button
                 type="submit"
                 className="btn"
@@ -242,6 +219,37 @@ export default function Championships() {
                 {creating ? 'Creating…' : 'Create'}
               </button>
             </div>
+
+            <details style={{ marginTop: '0.75rem' }}>
+              <summary style={{ cursor: 'pointer', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                Advanced settings
+              </summary>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end', marginTop: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', paddingBottom: '2px' }}>
+                  <input
+                    type="checkbox"
+                    id="hasGroups"
+                    checked={form.hasGroups}
+                    onChange={(e) => setForm((f) => ({ ...f, hasGroups: e.target.checked }))}
+                  />
+                  <label htmlFor="hasGroups" style={{ fontSize: '0.875rem' }}>Group stage</label>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                    MATCH FORMAT
+                  </label>
+                  <select
+                    value={form.setsToWin}
+                    onChange={(e) => setForm((f) => ({ ...f, setsToWin: Number(e.target.value) }))}
+                    style={{ width: '150px' }}
+                  >
+                    <option value={1}>До 1 сету</option>
+                    <option value={2}>До 2 сетів</option>
+                    <option value={3}>До 3 сетів</option>
+                  </select>
+                </div>
+              </div>
+            </details>
 
             {form.ligueId && form.capacity && form.pointsConfig && (
               <PointsConfigForm
