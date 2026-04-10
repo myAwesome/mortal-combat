@@ -8,6 +8,8 @@ const handleResponse = async (res) => {
 
 export const getPlayers = () => fetch(BASE).then(handleResponse)
 
+export const getPlayer = (id) => fetch(`${BASE}/${id}`).then(handleResponse)
+
 export const createPlayer = (name) =>
   fetch(BASE, {
     method: 'POST',
