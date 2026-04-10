@@ -33,8 +33,12 @@ export const deleteChampionship = (id) =>
 export const setEntryList = (id, playerIds) =>
   post(`${BASE}/${id}/entry-list`, { playerIds })
 
-export const createGroups = (id, optimalGroupSize) =>
-  post(`${BASE}/${id}/groups`, { optimalGroupSize })
+export const createGroups = (id, options = {}) => {
+  if (typeof options === 'number') {
+    return post(`${BASE}/${id}/groups`, { optimalGroupSize: options })
+  }
+  return post(`${BASE}/${id}/groups`, options)
+}
 
 export const createDraw = (id) => post(`${BASE}/${id}/draw`)
 
