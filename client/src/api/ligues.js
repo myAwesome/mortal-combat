@@ -38,5 +38,15 @@ export const getLiguePlayers = (id) =>
 export const addLiguePlayer = (ligueId, playerId) =>
   post(`${BASE}/${ligueId}/players`, { playerId })
 
+export const addLiguePlayersBatch = (ligueId, playerIds) =>
+  post(`${BASE}/${ligueId}/players/batch`, { playerIds })
+
 export const removeLiguePlayer = (ligueId, lpId) =>
   fetch(`${BASE}/${ligueId}/players/${lpId}`, { method: 'DELETE' }).then(handleResponse)
+
+export const removeLiguePlayersBatch = (ligueId, liguePlayerIds) =>
+  fetch(`${BASE}/${ligueId}/players/batch`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ liguePlayerIds }),
+  }).then(handleResponse)
