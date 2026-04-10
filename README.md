@@ -113,7 +113,11 @@ MySQL is expected to already be running locally with those credentials.
 | `POST` | `/api/ligues` | Create ligue (`name` required) |
 | `GET` | `/api/ligues/:id` | Get ligue details |
 | `DELETE` | `/api/ligues/:id` | Delete ligue |
+| `GET` | `/api/ligues/:id/players` | List ligue players |
 | `POST` | `/api/ligues/:id/players` | Add player to ligue (`playerId` required) |
+| `POST` | `/api/ligues/:id/players/batch` | Batch add players (`playerIds` array) |
+| `DELETE` | `/api/ligues/:id/players/:playerId` | Remove one ligue player |
+| `DELETE` | `/api/ligues/:id/players/batch` | Batch remove ligue players (`liguePlayerIds` array) |
 | `GET` | `/api/ligues/:id/ranking` | Get ligue ranking sorted by points |
 
 ## Tournament Workflow

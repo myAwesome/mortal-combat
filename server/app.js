@@ -199,6 +199,7 @@ app.get('/api/ligues/:id/players', async (req, res) => {
     const list = await repo.getAllLiguePlayers(req.params.id, playersMap);
     res.json(list.map(({ id, lp }) => ({
       id,
+      playerId: String(lp.player.id),
       name: lp.player.name,
       points: lp.points,
       champsPlayed: lp.champs.length,
@@ -225,18 +226,101 @@ app.post('/api/ligues/:id/players', async (req, res) => {
       return res.status(409).json({ error: 'Player already in ligue', id: existingId });
 
     const id = await repo.createLiguePlayer(String(playerId), req.params.id);
-    res.status(201).json({ id, name: p.name, points: 0, champsPlayed: 0, champs: [] });
+    res.status(201).json({
+      id,
+      playerId: String(playerId),
+      name: p.name,
+      points: 0,
+      champsPlayed: 0,
+      champs: [],
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/ligues/:id/players/batch  { playerIds: [id, ...] }
+app.post('/api/ligues/:id/players/batch', async (req, res) => {
+  const { playerIds } = req.body;
+  if (!Array.isArray(playerIds) || playerIds.length === 0) {
+    return res.status(400).json({ error: 'playerIds array is required' });
+  }
+  try {
+    const ligue = await repo.getLigueById(req.params.id);
+    if (!ligue) return res.status(404).json({ error: 'Ligue not found' });
+
+    const playersMap = await repo.loadPlayersMap();
+    const uniquePlayerIds = [...new Set(playerIds.map((pid) => String(pid)))];
+    const created = [];
+    const skipped = [];
+    const missing = [];
+
+    for (const pid of uniquePlayerIds) {
+      const p = playersMap.get(pid);
+      if (!p) {
+        missing.push(pid);
+        continue;
+      }
+
+      const existingId = await repo.findLiguePlayerByPlayerId(pid, req.params.id);
+      if (existingId) {
+        skipped.push({ playerId: pid, liguePlayerId: existingId, reason: 'already in ligue' });
+        continue;
+      }
+
+      const liguePlayerId = await repo.createLiguePlayer(pid, req.params.id);
+      created.push({
+        id: liguePlayerId,
+        playerId: pid,
+        name: p.name,
+        points: 0,
+        champsPlayed: 0,
+        champs: [],
+      });
+    }
+
+    const status = created.length > 0 ? 201 : 200;
+    res.status(status).json({ created, skipped, missing });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
 // DELETE /api/ligues/:id/players/:playerId
-app.delete('/api/ligues/:id/players/:playerId', async (req, res) => {
+app.delete('/api/ligues/:id/players/:playerId(\\d+)', async (req, res) => {
   try {
-    const deleted = await repo.deleteLiguePlayer(req.params.playerId);
+    const ligue = await repo.getLigueById(req.params.id);
+    if (!ligue) return res.status(404).json({ error: 'Ligue not found' });
+
+    const deleted = await repo.deleteLiguePlayerForLigue(req.params.id, req.params.playerId);
     if (!deleted) return res.status(404).json({ error: 'Ligue player not found' });
     res.status(204).send();
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /api/ligues/:id/players/batch  { liguePlayerIds: [id, ...] }
+app.delete('/api/ligues/:id/players/batch', async (req, res) => {
+  const { liguePlayerIds } = req.body;
+  if (!Array.isArray(liguePlayerIds) || liguePlayerIds.length === 0) {
+    return res.status(400).json({ error: 'liguePlayerIds array is required' });
+  }
+  try {
+    const ligue = await repo.getLigueById(req.params.id);
+    if (!ligue) return res.status(404).json({ error: 'Ligue not found' });
+
+    const uniqueIds = [...new Set(liguePlayerIds.map((lpId) => String(lpId)))];
+    const deleted = [];
+    const missing = [];
+
+    for (const lpId of uniqueIds) {
+      const ok = await repo.deleteLiguePlayerForLigue(req.params.id, lpId);
+      if (ok) deleted.push(lpId);
+      else missing.push(lpId);
+    }
+
+    res.json({ deleted, missing });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

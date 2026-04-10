@@ -390,6 +390,14 @@ async function deleteLiguePlayer(id) {
   return result.affectedRows > 0;
 }
 
+async function deleteLiguePlayerForLigue(ligueId, id) {
+  const [result] = await db.query(
+    'DELETE FROM ligue_players WHERE id = ? AND ligue_id = ?',
+    [id, ligueId]
+  );
+  return result.affectedRows > 0;
+}
+
 // ── Utility ───────────────────────────────────────────────────────────────────
 
 async function truncateAll() {
@@ -428,5 +436,6 @@ module.exports = {
   appendLiguePlayerChamp,
   syncChampionshipToLigue,
   deleteLiguePlayer,
+  deleteLiguePlayerForLigue,
   truncateAll,
 };
