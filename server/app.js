@@ -246,27 +246,11 @@ app.get('/api/ligues/:id/players', async (req, res) => {
 
 // POST /api/ligues/:id/players  { playerId }
 app.post('/api/ligues/:id/players', async (req, res) => {
-  const { playerId } = req.body;
-  if (!playerId) return res.status(400).json({ error: 'playerId is required' });
   try {
     const ligue = await repo.getLigueById(req.params.id);
     if (!ligue) return res.status(404).json({ error: 'Ligue not found' });
-
-    const p = await repo.getPlayerRow(String(playerId));
-    if (!p) return res.status(404).json({ error: 'Player not found' });
-
-    const existingId = await repo.findLiguePlayerByPlayerId(String(playerId), req.params.id);
-    if (existingId)
-      return res.status(409).json({ error: 'Player already in ligue', id: existingId });
-
-    const id = await repo.createLiguePlayer(String(playerId), req.params.id);
-    res.status(201).json({
-      id,
-      playerId: String(playerId),
-      name: p.name,
-      points: 0,
-      champsPlayed: 0,
-      champs: [],
+    res.status(405).json({
+      error: 'Manual adding to ligue is disabled. Players are added from championship entry list.',
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -275,46 +259,12 @@ app.post('/api/ligues/:id/players', async (req, res) => {
 
 // POST /api/ligues/:id/players/batch  { playerIds: [id, ...] }
 app.post('/api/ligues/:id/players/batch', async (req, res) => {
-  const { playerIds } = req.body;
-  if (!Array.isArray(playerIds) || playerIds.length === 0) {
-    return res.status(400).json({ error: 'playerIds array is required' });
-  }
   try {
     const ligue = await repo.getLigueById(req.params.id);
     if (!ligue) return res.status(404).json({ error: 'Ligue not found' });
-
-    const playersMap = await repo.loadPlayersMap();
-    const uniquePlayerIds = [...new Set(playerIds.map((pid) => String(pid)))];
-    const created = [];
-    const skipped = [];
-    const missing = [];
-
-    for (const pid of uniquePlayerIds) {
-      const p = playersMap.get(pid);
-      if (!p) {
-        missing.push(pid);
-        continue;
-      }
-
-      const existingId = await repo.findLiguePlayerByPlayerId(pid, req.params.id);
-      if (existingId) {
-        skipped.push({ playerId: pid, liguePlayerId: existingId, reason: 'already in ligue' });
-        continue;
-      }
-
-      const liguePlayerId = await repo.createLiguePlayer(pid, req.params.id);
-      created.push({
-        id: liguePlayerId,
-        playerId: pid,
-        name: p.name,
-        points: 0,
-        champsPlayed: 0,
-        champs: [],
-      });
-    }
-
-    const status = created.length > 0 ? 201 : 200;
-    res.status(status).json({ created, skipped, missing });
+    res.status(405).json({
+      error: 'Manual adding to ligue is disabled. Players are added from championship entry list.',
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -459,6 +409,11 @@ app.post('/api/championships/:id/entry-list', async (req, res) => {
 
     const { id, champ } = found;
     champ.entryList = players;
+
+    if (champ.ligueId) {
+      await repo.ensureLiguePlayers(champ.ligueId, players.map((p) => p.id));
+    }
+
     await repo.saveChampionshipState(id, champ);
     res.json(serializeChampionship(id, champ));
   } catch (e) {
