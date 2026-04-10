@@ -15,9 +15,33 @@ function formatPlaceLabel(place) {
 
 export default function PlayoffBracket({ draw, champId, onDone }) {
   const rounds = buildBracket(draw.matches)
-  const placementMatches = draw.matches
-    .filter((m) => m.prize > 1 && m.playersInRound === 2)
-    .sort((a, b) => a.prize - b.prize)
+  const placementRoundGroups = Array.from(
+    draw.matches
+      .filter((m) => m.prize > 1)
+      .reduce((acc, match) => {
+        const key = `${match.prize}-${match.playersInRound}`
+        if (!acc.has(key)) {
+          acc.set(key, {
+            key,
+            prize: match.prize,
+            playersInRound: match.playersInRound,
+            stage: match.stage,
+            matches: [],
+          })
+        }
+        acc.get(key).matches.push(match)
+        return acc
+      }, new Map())
+      .values()
+  )
+    .map((group) => ({
+      ...group,
+      matches: group.matches.sort((a, b) => a.matchNumberInRound - b.matchNumberInRound),
+    }))
+    .sort((a, b) => {
+      if (a.prize !== b.prize) return a.prize - b.prize
+      return b.playersInRound - a.playersInRound
+    })
 
   if (rounds.length === 0) {
     return <p style={{ color: 'var(--color-text-muted)' }}>No bracket matches found.</p>
@@ -54,14 +78,18 @@ export default function PlayoffBracket({ draw, champId, onDone }) {
         </div>
       ))}
     </div>
-    {placementMatches.length > 0 && (
+    {placementRoundGroups.length > 0 && (
       <div style={{ marginTop: '1.5rem', display: 'grid', gap: '1rem' }}>
-        {placementMatches.map((match) => (
-          <div key={match.id}>
+        {placementRoundGroups.map((group) => (
+          <div key={group.key}>
             <div className="bracket-round-header" style={{ marginBottom: '0.5rem' }}>
-              {formatPlaceLabel(match.prize)}
+              {formatPlaceLabel(group.prize)} {group.stage}
             </div>
-            <BracketMatch match={match} champId={champId} onDone={onDone} />
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              {group.matches.map((match) => (
+                <BracketMatch key={match.id} match={match} champId={champId} onDone={onDone} />
+              ))}
+            </div>
           </div>
         ))}
       </div>
