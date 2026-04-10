@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { buildBracket } from './buildBracket'
 import BracketMatch from './BracketMatch'
 import './PlayoffBracket.css'
@@ -14,53 +15,45 @@ function formatPlaceLabel(place) {
 }
 
 export default function PlayoffBracket({ draw, champId, onDone }) {
-  const rounds = buildBracket(draw.matches)
-  const placementRoundGroups = Array.from(
-    draw.matches
-      .filter((m) => m.prize > 1)
-      .reduce((acc, match) => {
-        const key = `${match.prize}-${match.playersInRound}`
-        if (!acc.has(key)) {
-          acc.set(key, {
-            key,
-            prize: match.prize,
-            playersInRound: match.playersInRound,
-            stage: match.stage,
-            matches: [],
-          })
-        }
-        acc.get(key).matches.push(match)
-        return acc
-      }, new Map())
-      .values()
+  const mainRounds = buildBracket(draw.matches, { prize: 1 })
+  const thirdPlaceFinal = draw.matches.find((m) => m.prize === 3 && m.playersInRound === 2)
+  const placementPrizes = useMemo(
+    () =>
+      [...new Set(draw.matches.filter((m) => m.prize > 3).map((m) => m.prize))]
+        .sort((a, b) => a - b),
+    [draw.matches]
   )
-    .map((group) => ({
-      ...group,
-      matches: group.matches.sort((a, b) => a.matchNumberInRound - b.matchNumberInRound),
-    }))
-    .sort((a, b) => {
-      if (a.prize !== b.prize) return a.prize - b.prize
-      return b.playersInRound - a.playersInRound
-    })
+  const tabs = useMemo(
+    () => [
+      { key: 'main', label: 'Main Playoff', type: 'main' },
+      ...placementPrizes.map((prize) => ({
+        key: `p${prize}`,
+        label: `${formatPlaceLabel(prize)} Playoff`,
+        type: 'placement',
+        prize,
+      })),
+    ],
+    [placementPrizes]
+  )
+  const [activeTab, setActiveTab] = useState('main')
+  const resolvedActiveTab = tabs.find((tab) => tab.key === activeTab) ?? tabs[0]
 
-  if (rounds.length === 0) {
+  if (mainRounds.length === 0) {
     return <p style={{ color: 'var(--color-text-muted)' }}>No bracket matches found.</p>
   }
 
-  return (
-    <div>
+  const renderBracketRounds = (rounds) => (
     <div className="bracket">
       {rounds.map((round, roundIdx) => (
         <div key={round.label} style={{ display: 'flex', alignItems: 'stretch' }}>
           <div className="bracket-round">
             <div className="bracket-round-header">{round.label}</div>
-            {round.matches.map((match, matchIdx) => (
+            {round.matches.map((match) => (
               <div key={match.id} className="bracket-match-slot">
                 <BracketMatch match={match} champId={champId} onDone={onDone} />
               </div>
             ))}
           </div>
-          {/* Connector between rounds */}
           {roundIdx < rounds.length - 1 && (
             <div className="bracket-round" style={{ justifyContent: 'space-around' }}>
               <div className="bracket-round-header" style={{ visibility: 'hidden' }}>-</div>
@@ -78,22 +71,50 @@ export default function PlayoffBracket({ draw, champId, onDone }) {
         </div>
       ))}
     </div>
-    {placementRoundGroups.length > 0 && (
-      <div style={{ marginTop: '1.5rem', display: 'grid', gap: '1rem' }}>
-        {placementRoundGroups.map((group) => (
-          <div key={group.key}>
-            <div className="bracket-round-header" style={{ marginBottom: '0.5rem' }}>
-              {formatPlaceLabel(group.prize)} {group.stage}
-            </div>
-            <div style={{ display: 'grid', gap: '0.75rem' }}>
-              {group.matches.map((match) => (
-                <BracketMatch key={match.id} match={match} champId={champId} onDone={onDone} />
-              ))}
-            </div>
-          </div>
+  )
+
+  const placementRounds =
+    resolvedActiveTab.type === 'placement'
+      ? buildBracket(draw.matches, { prize: resolvedActiveTab.prize })
+      : []
+
+  return (
+    <div>
+      <div className="bracket-tabs">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={`bracket-tab ${resolvedActiveTab.key === tab.key ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            {tab.label}
+          </button>
         ))}
       </div>
-    )}
+
+      {resolvedActiveTab.type === 'main' && (
+        <>
+          {renderBracketRounds(mainRounds)}
+          {thirdPlaceFinal && (
+            <div style={{ marginTop: '1.25rem' }}>
+              <div className="bracket-round-header" style={{ marginBottom: '0.5rem' }}>
+                3rd Place Final
+              </div>
+              <BracketMatch match={thirdPlaceFinal} champId={champId} onDone={onDone} />
+            </div>
+          )}
+        </>
+      )}
+
+      {resolvedActiveTab.type === 'placement' && (
+        <>
+          {renderBracketRounds(placementRounds)}
+          {placementRounds.length === 0 && (
+            <p style={{ color: 'var(--color-text-muted)' }}>No bracket matches found for this place.</p>
+          )}
+        </>
+      )}
     </div>
   )
 }
