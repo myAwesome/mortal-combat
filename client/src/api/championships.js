@@ -53,3 +53,9 @@ export const recordDrawMatch = (champId, matchId, result) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ result }),
   }).then(handleResponse)
+
+export const autoFillGroupMatches = (champId) =>
+  post(`${BASE}/${champId}/groups/auto-fill`)
+
+export const autoFillDrawMatches = (champId) =>
+  post(`${BASE}/${champId}/draw/auto-fill`)
