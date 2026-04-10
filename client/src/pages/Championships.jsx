@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getChampionships, createChampionship, deleteChampionship } from '../api/championships'
 import { getLigues } from '../api/ligues'
 import { deriveStage, STAGE_LABELS } from '../features/championship/deriveStage'
+import { getMatchFormatLabel } from '../features/championship/scoreFormat'
 import Spinner from '../components/Spinner'
 import ErrorMessage from '../components/ErrorMessage'
 import ConfirmButton from '../components/ConfirmButton'
@@ -84,7 +85,7 @@ function PointsConfigForm({ capacity, hasGroups, value, onChange }) {
   )
 }
 
-const emptyForm = { name: '', capacity: '', hasGroups: true, ligueId: '', pointsConfig: null }
+const emptyForm = { name: '', capacity: '', hasGroups: true, setsToWin: 1, ligueId: '', pointsConfig: null }
 
 export default function Championships() {
   const [champs, setChamps] = useState([])
@@ -126,6 +127,7 @@ export default function Championships() {
         name: form.name.trim(),
         capacity: Number(form.capacity),
         hasGroups: form.hasGroups,
+        setsToWin: Number(form.setsToWin),
         ligueId: form.ligueId ? Number(form.ligueId) : null,
         pointsConfig: form.pointsConfig,
       })
@@ -218,6 +220,20 @@ export default function Championships() {
                 />
                 <label htmlFor="hasGroups" style={{ fontSize: '0.875rem' }}>Group stage</label>
               </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                  MATCH FORMAT
+                </label>
+                <select
+                  value={form.setsToWin}
+                  onChange={(e) => setForm((f) => ({ ...f, setsToWin: Number(e.target.value) }))}
+                  style={{ width: '150px' }}
+                >
+                  <option value={1}>До 1 сету</option>
+                  <option value={2}>До 2 сетів</option>
+                  <option value={3}>До 3 сетів</option>
+                </select>
+              </div>
               <button
                 type="submit"
                 className="btn"
@@ -266,7 +282,8 @@ export default function Championships() {
                     </td>
                     <td style={{ color: 'var(--color-text-muted)' }}>{c.capacity}</td>
                     <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
-                      {c.hasGroups ? 'Groups + Playoff' : 'Playoff only'}
+                      {(c.hasGroups ? 'Groups + Playoff' : 'Playoff only')}
+                      <span style={{ marginLeft: '0.4rem' }}>• {getMatchFormatLabel(c.setsToWin || 1)}</span>
                     </td>
                     <td style={{ fontSize: '0.8rem' }}>
                       {c.ligueId

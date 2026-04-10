@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { recordDrawMatch } from '../../api/championships'
+import { getScorePlaceholder, isScoreInputShapeValid } from './scoreFormat'
 
 function PlayerRow({ player, isWinner, result }) {
   if (!player) {
@@ -16,7 +17,7 @@ function PlayerRow({ player, isWinner, result }) {
   )
 }
 
-export default function BracketMatch({ match, champId, onDone }) {
+export default function BracketMatch({ match, champId, onDone, setsToWin = 1 }) {
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -29,8 +30,8 @@ export default function BracketMatch({ match, champId, onDone }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!/^\d+-\d+$/.test(value.trim())) {
-      setError('Format: 6-4')
+    if (!isScoreInputShapeValid(value, setsToWin)) {
+      setError(`Некоректний формат. Приклад: ${getScorePlaceholder(setsToWin)}`)
       return
     }
     setError('')
@@ -54,8 +55,8 @@ export default function BracketMatch({ match, champId, onDone }) {
           <input
             value={value}
             onChange={(e) => { setValue(e.target.value); setError('') }}
-            placeholder="6-4"
-            maxLength={7}
+            placeholder={getScorePlaceholder(setsToWin)}
+            maxLength={31}
             disabled={saving}
           />
           <button type="submit" className="btn btn-sm" disabled={saving || !value.trim()}>

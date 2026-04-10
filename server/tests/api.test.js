@@ -74,9 +74,10 @@ describe('Championships API - CRUD', () => {
   test('POST /api/championships - creates championship', async () => {
     const res = await request(app)
       .post('/api/championships')
-      .send({ name: 'Test Open', capacity: 9 });
+      .send({ name: 'Test Open', capacity: 9, setsToWin: 2 });
     expect(res.status).toBe(201);
     expect(res.body.name).toBe('Test Open');
+    expect(res.body.setsToWin).toBe(2);
     expect(res.body.id).toBeDefined();
     id = res.body.id;
   });

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getChampionship } from '../api/championships'
 import { deriveStage, STAGES } from '../features/championship/deriveStage'
+import { getMatchFormatLabel } from '../features/championship/scoreFormat'
 import WorkflowStepper from '../features/championship/WorkflowStepper'
 import EntryListStep from '../features/championship/EntryListStep'
 import GroupStageStep from '../features/championship/GroupStageStep'
@@ -46,6 +47,7 @@ export default function ChampionshipDetail() {
           <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
             <span>Capacity: {champ.capacity}</span>
             <span>{champ.hasGroups ? 'Groups + Playoff' : 'Playoff only'}</span>
+            <span>{getMatchFormatLabel(champ.setsToWin || 1)}</span>
             {champ.players?.length > 0 && (
               <span>{champ.players.length} players enrolled</span>
             )}

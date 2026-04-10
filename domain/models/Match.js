@@ -5,6 +5,7 @@ class Match {
 
   player1;
   player2;
+  setsToWin;
   winner;
   loser;
 
@@ -12,6 +13,7 @@ class Match {
     this.__result = null;
     this.player1 = obj.player1 ?? null;
     this.player2 = obj.player2 ?? null;
+    this.setsToWin = obj.setsToWin ?? 1;
     this.winner = null;
     this.loser = null;
   }
@@ -31,7 +33,7 @@ class Match {
   };
 
   set result(result) {
-    this.__result = new TennisSet(result);
+    this.__result = new TennisSet(result, this.setsToWin);
     this.determineWinner();
     this.updateMetadataAfterMatch();
   }

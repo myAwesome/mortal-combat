@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json());
 
 // ── Serializers ──────────────────────────────────────────────────────────────
-const serializeSet = (set) => set ? `${set.p1}-${set.p2}` : null;
+const serializeSet = (set) => set ? set.toString() : null;
 
 const serializeGroupPlayer = (gp) => ({
   name: gp.player.name,
@@ -51,6 +51,7 @@ const serializeChampionship = (id, c) => ({
   name: c.name,
   capacity: c.capacity,
   hasGroups: c.hasGroups,
+  setsToWin: c.setsToWin,
   ligueId: c.ligueId || null,
   pointsConfig: c.points ? { playoff: c.points, group: c.groupPoints } : null,
   players: c.players
@@ -254,10 +255,20 @@ app.get('/api/championships', async (_req, res) => {
 });
 
 app.post('/api/championships', async (req, res) => {
-  const { name, capacity, hasGroups = true, ligueId = null, pointsConfig = null } = req.body;
+  const { name, capacity, hasGroups = true, ligueId = null, pointsConfig = null, setsToWin = 1 } = req.body;
   if (!name || !capacity) return res.status(400).json({ error: 'name and capacity are required' });
+  if (![1, 2, 3].includes(Number(setsToWin))) {
+    return res.status(400).json({ error: 'setsToWin must be 1, 2 or 3' });
+  }
   try {
-    const { id, champ } = await repo.createChampionship(name, capacity, hasGroups, ligueId, pointsConfig);
+    const { id, champ } = await repo.createChampionship(
+      name,
+      capacity,
+      hasGroups,
+      ligueId,
+      pointsConfig,
+      Number(setsToWin)
+    );
     res.status(201).json(serializeChampionship(id, champ));
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -276,7 +287,10 @@ app.get('/api/championships/:id', async (req, res) => {
 });
 
 app.put('/api/championships/:id', async (req, res) => {
-  const { name, capacity, hasGroups } = req.body;
+  const { name, capacity, hasGroups, setsToWin } = req.body;
+  if (setsToWin !== undefined && ![1, 2, 3].includes(Number(setsToWin))) {
+    return res.status(400).json({ error: 'setsToWin must be 1, 2 or 3' });
+  }
   try {
     const playersMap = await repo.loadPlayersMap();
     const found = await repo.getChampionshipById(req.params.id, playersMap);
@@ -286,8 +300,9 @@ app.put('/api/championships/:id', async (req, res) => {
     if (name !== undefined) champ.name = name;
     if (capacity !== undefined) champ.capacity = capacity;
     if (hasGroups !== undefined) champ.hasGroups = hasGroups;
+    if (setsToWin !== undefined) champ.setsToWin = Number(setsToWin);
 
-    await repo.updateChampionshipFields(req.params.id, { name, capacity, hasGroups });
+    await repo.updateChampionshipFields(req.params.id, { name, capacity, hasGroups, setsToWin });
     res.json(serializeChampionship(found.id, champ));
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -448,7 +463,7 @@ app.put('/api/championships/:id/groups/:name/matches/:matchId', async (req, res)
     if (!m) return res.status(404).json({ error: 'Match not found' });
 
     const { result } = req.body;
-    if (!result) return res.status(400).json({ error: 'result is required (e.g. "6-4")' });
+    if (!result) return res.status(400).json({ error: 'result is required (e.g. "6-2 4-6 7-5")' });
 
     m.result = result;
 
@@ -505,7 +520,7 @@ app.put('/api/championships/:id/draw/matches/:matchId', async (req, res) => {
     if (!m) return res.status(404).json({ error: 'Match not found' });
 
     const { result } = req.body;
-    if (!result) return res.status(400).json({ error: 'result is required (e.g. "6-4")' });
+    if (!result) return res.status(400).json({ error: 'result is required (e.g. "6-2 4-6 7-5")' });
 
     m.result = result;
     await repo.saveChampionshipState(id, champ);
