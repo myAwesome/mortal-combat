@@ -35,12 +35,6 @@ export const getLigueRanking = (id) =>
 export const getLiguePlayers = (id) =>
   fetch(`${BASE}/${id}/players`).then(handleResponse)
 
-export const addLiguePlayer = (ligueId, playerId) =>
-  post(`${BASE}/${ligueId}/players`, { playerId })
-
-export const addLiguePlayersBatch = (ligueId, playerIds) =>
-  post(`${BASE}/${ligueId}/players/batch`, { playerIds })
-
 export const removeLiguePlayer = (ligueId, lpId) =>
   fetch(`${BASE}/${ligueId}/players/${lpId}`, { method: 'DELETE' }).then(handleResponse)
 

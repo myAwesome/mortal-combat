@@ -352,6 +352,16 @@ async function createLiguePlayer(playerId, ligueId) {
   return String(result.insertId);
 }
 
+async function ensureLiguePlayers(ligueId, playerIds) {
+  const uniquePlayerIds = [...new Set(playerIds.map((playerId) => String(playerId)))];
+  for (const playerId of uniquePlayerIds) {
+    const existingId = await findLiguePlayerByPlayerId(playerId, ligueId);
+    if (!existingId) {
+      await createLiguePlayer(playerId, ligueId);
+    }
+  }
+}
+
 async function updateLiguePlayerPoints(id, addPoints) {
   await db.query(
     'UPDATE ligue_players SET points = points + ? WHERE id = ?',
@@ -432,6 +442,7 @@ module.exports = {
   getLiguePlayerById,
   findLiguePlayerByPlayerId,
   createLiguePlayer,
+  ensureLiguePlayers,
   updateLiguePlayerPoints,
   appendLiguePlayerChamp,
   syncChampionshipToLigue,
