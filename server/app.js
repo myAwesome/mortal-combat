@@ -431,8 +431,12 @@ app.post('/api/championships/:id/groups', async (req, res) => {
     const { champ, id } = found;
     if (!champ.players) return res.status(400).json({ error: 'Entry list not set' });
 
-    const { optimalGroupSize = 3 } = req.body;
-    champ.createGroups(optimalGroupSize);
+    const { optimalGroupSize = 3, manualGroups = null } = req.body;
+    if (Array.isArray(manualGroups) && manualGroups.length > 0) {
+      champ.createGroupsManual(manualGroups);
+    } else {
+      champ.createGroups(optimalGroupSize);
+    }
     await repo.saveChampionshipState(id, champ);
     res.json(serializeChampionship(id, champ));
   } catch (e) {

@@ -56,6 +56,51 @@ class Championship {
     this.groups.forEach(group => group.createMatches(this.setsToWin));
   };
 
+  createGroupsManual = (manualGroups = [], entryList = this.entryList) => {
+    if (!Array.isArray(manualGroups) || manualGroups.length === 0) {
+      throw new Error("manualGroups is required");
+    }
+
+    const entryById = new Map(
+      (entryList || []).map((cp) => [String(cp.player?.id), cp])
+    );
+    const assignedIds = new Set();
+
+    this.groups = manualGroups.map((manualGroup, index) => {
+      const groupName = manualGroup?.name || groupNames[index];
+      const playerIds = manualGroup?.playerIds || [];
+
+      if (!Array.isArray(playerIds) || playerIds.length === 0) {
+        throw new Error(`Group ${groupName} must contain players`);
+      }
+
+      const group = new Group(groupName);
+      group.capacity = playerIds.length;
+
+      playerIds.forEach((id) => {
+        const key = String(id);
+        if (assignedIds.has(key)) {
+          throw new Error(`Player ${key} assigned to multiple groups`);
+        }
+        const championshipPlayer = entryById.get(key);
+        if (!championshipPlayer) {
+          throw new Error(`Player ${key} is not in entry list`);
+        }
+        group.addPlayer(new GroupPlayer(championshipPlayer.player));
+        assignedIds.add(key);
+      });
+
+      return group;
+    });
+
+    if (entryById.size !== assignedIds.size) {
+      throw new Error("All entry list players must be assigned to a group");
+    }
+
+    this.groupsLength = this.groups.length;
+    this.groups.forEach((group) => group.createMatches(this.setsToWin));
+  };
+
   // Point Assignment
   addPointsAccordingToPlace = () => {
     this.groups.forEach(group => {

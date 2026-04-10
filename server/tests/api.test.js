@@ -312,6 +312,39 @@ describe('Full tournament flow', () => {
     const fullChampRes = await request(app).get(`/api/championships/${autoChampId}`);
     expect(fullChampRes.body.draw.completedMatches).toBe(fullChampRes.body.draw.matches.length);
   });
+
+  test('POST groups - creates group stage with manual assignments', async () => {
+    const manualPlayerNames = ['Manual 1', 'Manual 2', 'Manual 3', 'Manual 4', 'Manual 5', 'Manual 6'];
+    const manualPlayerIds = [];
+
+    for (const name of manualPlayerNames) {
+      const res = await request(app).post('/api/players').send({ name });
+      manualPlayerIds.push(res.body.id);
+    }
+
+    const champRes = await request(app)
+      .post('/api/championships')
+      .send({ name: 'Manual Groups Cup', capacity: 6, hasGroups: true, setsToWin: 1 });
+    const manualChampId = champRes.body.id;
+
+    await request(app)
+      .post(`/api/championships/${manualChampId}/entry-list`)
+      .send({ playerIds: manualPlayerIds });
+
+    const manualGroups = [
+      { name: 'A', playerIds: manualPlayerIds.slice(0, 3) },
+      { name: 'B', playerIds: manualPlayerIds.slice(3, 6) },
+    ];
+
+    const groupsRes = await request(app)
+      .post(`/api/championships/${manualChampId}/groups`)
+      .send({ manualGroups });
+
+    expect(groupsRes.status).toBe(200);
+    expect(groupsRes.body.groups).toHaveLength(2);
+    expect(groupsRes.body.groups[0].players.map((player) => player.name)).toEqual(manualPlayerNames.slice(0, 3));
+    expect(groupsRes.body.groups[1].players.map((player) => player.name)).toEqual(manualPlayerNames.slice(3, 6));
+  });
 });
 
 // ── Ligue API ─────────────────────────────────────────────────────────────────
