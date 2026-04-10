@@ -31,6 +31,7 @@ export default function ChampionshipDetail() {
   if (!champ) return null
 
   const stage = deriveStage(champ)
+  const sortedByPoints = [...(champ.players || [])].sort((a, b) => (b.points || 0) - (a.points || 0))
 
   return (
     <div>
@@ -78,7 +79,71 @@ export default function ChampionshipDetail() {
       )}
 
       {(stage === STAGES.START_DRAW || stage === STAGES.PLAYOFF || stage === STAGES.COMPLETE) && (
-        <DrawStep champ={champ} onDone={refresh} />
+        <>
+          {stage === STAGES.COMPLETE && (
+            <>
+              <div className="card" style={{ marginBottom: '1.5rem' }}>
+                <h2 style={{ marginBottom: '0.5rem', fontSize: '1rem' }}>Entry List</h2>
+                {champ.players?.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem' }}>
+                    {champ.players.map((p) => (
+                      <div
+                        key={p.id}
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 'var(--radius-md)',
+                          fontSize: '0.875rem',
+                          background: 'var(--color-white)',
+                        }}
+                      >
+                        {p.name}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>No players in entry list.</p>
+                )}
+              </div>
+
+              {champ.hasGroups && champ.groups.length > 0 && (
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <GroupStageStep champ={champ} onDone={refresh} />
+                </div>
+              )}
+            </>
+          )}
+
+          <DrawStep champ={champ} onDone={refresh} />
+
+          {stage === STAGES.COMPLETE && (
+            <div className="card" style={{ marginTop: '1.5rem' }}>
+              <h2 style={{ marginBottom: '0.75rem', fontSize: '1rem' }}>Points</h2>
+              {sortedByPoints.length > 0 ? (
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--color-border)' }}>
+                      <th style={{ padding: '0.5rem' }}>#</th>
+                      <th style={{ padding: '0.5rem' }}>Player</th>
+                      <th style={{ padding: '0.5rem', textAlign: 'right' }}>Points</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedByPoints.map((p, idx) => (
+                      <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        <td style={{ padding: '0.5rem' }}>{idx + 1}</td>
+                        <td style={{ padding: '0.5rem' }}>{p.name}</td>
+                        <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>{p.points || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>No points available.</p>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
