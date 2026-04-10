@@ -51,6 +51,17 @@ npm run dev      # starts Vite dev server (proxies /api to port 3000)
 npm run build    # production build
 ```
 
+### Run Both (Server + Client)
+
+Use the helper script to start backend and frontend together:
+
+```bash
+./dev.sh
+```
+
+`dev.sh` loads DB credentials from root `.env`.  
+MySQL is expected to already be running locally with those credentials.
+
 ## API Routes
 
 ### Players
