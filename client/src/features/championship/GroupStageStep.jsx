@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { createGroups } from '../../api/championships'
+import { autoFillGroupMatches, createGroups } from '../../api/championships'
 import GroupCard from './GroupCard'
 import ErrorMessage from '../../components/ErrorMessage'
 
 export default function GroupStageStep({ champ, onDone, needsSetup }) {
   const [groupSize, setGroupSize] = useState(3)
   const [creating, setCreating] = useState(false)
+  const [autoFilling, setAutoFilling] = useState(false)
   const [error, setError] = useState(null)
 
   const handleCreate = async () => {
@@ -18,6 +19,19 @@ export default function GroupStageStep({ champ, onDone, needsSetup }) {
       setError(err)
     } finally {
       setCreating(false)
+    }
+  }
+
+  const handleAutoFill = async () => {
+    setAutoFilling(true)
+    setError(null)
+    try {
+      await autoFillGroupMatches(champ.id)
+      onDone()
+    } catch (err) {
+      setError(err)
+    } finally {
+      setAutoFilling(false)
     }
   }
 
@@ -53,6 +67,12 @@ export default function GroupStageStep({ champ, onDone, needsSetup }) {
 
   return (
     <div>
+      <ErrorMessage error={error} />
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+        <button className="btn btn-sm" onClick={handleAutoFill} disabled={allDone || autoFilling}>
+          {autoFilling ? 'Auto Filling…' : 'Auto Fill Results'}
+        </button>
+      </div>
       {allDone && (
         <div style={{
           background: 'var(--color-primary-light)',

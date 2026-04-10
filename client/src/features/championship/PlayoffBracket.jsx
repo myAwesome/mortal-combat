@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { autoFillDrawMatches } from '../../api/championships'
+import ErrorMessage from '../../components/ErrorMessage'
 import { buildBracket } from './buildBracket'
 import BracketMatch from './BracketMatch'
 import './PlayoffBracket.css'
@@ -15,6 +17,8 @@ function formatPlaceLabel(place) {
 }
 
 export default function PlayoffBracket({ draw, champId, onDone, setsToWin = 1 }) {
+  const [autoFilling, setAutoFilling] = useState(false)
+  const [error, setError] = useState(null)
   const mainRounds = buildBracket(draw.matches, { prize: 1 })
   const thirdPlaceFinal = draw.matches.find((m) => m.prize === 3 && m.playersInRound === 2)
   const placementPrizes = useMemo(
@@ -37,6 +41,20 @@ export default function PlayoffBracket({ draw, champId, onDone, setsToWin = 1 })
   )
   const [activeTab, setActiveTab] = useState('main')
   const resolvedActiveTab = tabs.find((tab) => tab.key === activeTab) ?? tabs[0]
+  const isComplete = draw.matches.every((m) => m.result !== null)
+
+  const handleAutoFill = async () => {
+    setAutoFilling(true)
+    setError(null)
+    try {
+      await autoFillDrawMatches(champId)
+      onDone()
+    } catch (err) {
+      setError(err)
+    } finally {
+      setAutoFilling(false)
+    }
+  }
 
   if (mainRounds.length === 0) {
     return <p style={{ color: 'var(--color-text-muted)' }}>No bracket matches found.</p>
@@ -80,6 +98,12 @@ export default function PlayoffBracket({ draw, champId, onDone, setsToWin = 1 })
 
   return (
     <div>
+      <div className="bracket-toolbar">
+        <ErrorMessage error={error} />
+        <button type="button" className="btn btn-sm" onClick={handleAutoFill} disabled={isComplete || autoFilling}>
+          {autoFilling ? 'Auto Filling…' : 'Auto Fill Results'}
+        </button>
+      </div>
       <div className="bracket-tabs">
         {tabs.map((tab) => (
           <button

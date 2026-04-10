@@ -7,6 +7,40 @@ const repo = require('./db/repo');
 const app = express();
 app.use(express.json());
 
+const AUTO_FILL_WINNING_SET_SCORES = [
+  [7, 6],
+  [7, 5],
+  [6, 4],
+  [6, 3],
+  [6, 2],
+  [6, 1],
+  [6, 0],
+];
+
+const pickRandom = (list) => list[Math.floor(Math.random() * list.length)];
+
+const generateAutoResult = (setsToWin) => {
+  const targetSets = [1, 2, 3].includes(Number(setsToWin)) ? Number(setsToWin) : 1;
+  let p1Sets = 0;
+  let p2Sets = 0;
+  const sets = [];
+
+  while (p1Sets < targetSets && p2Sets < targetSets) {
+    const [winnerGames, loserGames] = pickRandom(AUTO_FILL_WINNING_SET_SCORES);
+    const p1WinsSet = Math.random() >= 0.5;
+
+    if (p1WinsSet) {
+      sets.push(`${winnerGames}-${loserGames}`);
+      p1Sets += 1;
+    } else {
+      sets.push(`${loserGames}-${winnerGames}`);
+      p2Sets += 1;
+    }
+  }
+
+  return sets.join(' ');
+};
+
 // ── Serializers ──────────────────────────────────────────────────────────────
 const serializeSet = (set) => set ? set.toString() : null;
 
@@ -563,6 +597,38 @@ app.put('/api/championships/:id/groups/:name/matches/:matchId', async (req, res)
   }
 });
 
+app.post('/api/championships/:id/groups/auto-fill', async (req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+
+    const { champ, id } = found;
+    let filledMatches = 0;
+
+    champ.groups.forEach((group) => {
+      group.matches.forEach((match) => {
+        if (match.result !== null) return;
+        match.result = generateAutoResult(champ.setsToWin);
+        filledMatches += 1;
+      });
+
+      if (group.matches.every((match) => match.result !== null)) {
+        group.players.sort(Group.orderPlaces);
+        group.orderPlayersByPlace();
+      }
+    });
+
+    await repo.saveChampionshipState(id, champ);
+    res.json({
+      filledMatches,
+      groups: champ.groups.map(serializeGroup),
+    });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
 // ── Draw matches ──────────────────────────────────────────────────────────────
 
 app.get('/api/championships/:id/draw/matches', async (req, res) => {
@@ -615,6 +681,55 @@ app.put('/api/championships/:id/draw/matches/:matchId', async (req, res) => {
     }
 
     res.json(serializePlayOffMatch(m));
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.post('/api/championships/:id/draw/auto-fill', async (req, res) => {
+  try {
+    const playersMap = await repo.loadPlayersMap();
+    const found = await repo.getChampionshipById(req.params.id, playersMap);
+    if (!found) return res.status(404).json({ error: 'Championship not found' });
+    if (!found.champ.draw) return res.status(404).json({ error: 'Draw not created' });
+
+    const { champ, id } = found;
+    let filledMatches = 0;
+    let guard = champ.draw.matches.size * 4;
+
+    while (guard > 0) {
+      const readyMatches = Array.from(champ.draw.matches.values()).filter((match) =>
+        !match.result &&
+        match.player1 &&
+        !match.player1.isBye &&
+        match.player2 &&
+        !match.player2.isBye
+      );
+
+      if (readyMatches.length === 0) break;
+
+      readyMatches.forEach((match) => {
+        match.result = generateAutoResult(champ.setsToWin);
+        filledMatches += 1;
+      });
+      guard -= 1;
+    }
+
+    await repo.saveChampionshipState(id, champ);
+
+    const isComplete = champ.draw.completedMatches === champ.draw.matches.size;
+    if (champ.ligueId && !champ.ligueSynced && isComplete) {
+      await repo.syncChampionshipToLigue(id, champ);
+    }
+
+    res.json({
+      filledMatches,
+      draw: {
+        completedMatches: champ.draw.completedMatches,
+        totalMatches: champ.draw.matches.size,
+        matches: Array.from(champ.draw.matches.values()).map(serializePlayOffMatch),
+      },
+    });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }

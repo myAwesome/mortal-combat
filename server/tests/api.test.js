@@ -258,6 +258,60 @@ describe('Full tournament flow', () => {
       }
     }
   });
+
+  test('POST groups/auto-fill and POST draw/auto-fill - fills all pending matches', async () => {
+    const autoPlayerNames = [
+      'Auto 1', 'Auto 2', 'Auto 3', 'Auto 4',
+      'Auto 5', 'Auto 6', 'Auto 7', 'Auto 8',
+    ];
+    const autoPlayerIds = [];
+
+    for (const name of autoPlayerNames) {
+      const res = await request(app).post('/api/players').send({ name });
+      autoPlayerIds.push(res.body.id);
+    }
+
+    const champRes = await request(app)
+      .post('/api/championships')
+      .send({ name: 'Auto Fill Cup', capacity: 8, hasGroups: true, setsToWin: 2 });
+    const autoChampId = champRes.body.id;
+
+    await request(app)
+      .post(`/api/championships/${autoChampId}/entry-list`)
+      .send({ playerIds: autoPlayerIds });
+
+    await request(app)
+      .post(`/api/championships/${autoChampId}/groups`)
+      .send({ optimalGroupSize: 4 });
+
+    const autoGroupsRes = await request(app).post(`/api/championships/${autoChampId}/groups/auto-fill`);
+    expect(autoGroupsRes.status).toBe(200);
+    expect(autoGroupsRes.body.filledMatches).toBeGreaterThan(0);
+
+    const groupsRes = await request(app).get(`/api/championships/${autoChampId}/groups`);
+    const pendingGroupMatches = groupsRes.body.flatMap((group) => group.matches).filter((match) => match.result === null);
+    expect(pendingGroupMatches).toHaveLength(0);
+
+    await request(app).post(`/api/championships/${autoChampId}/draw`);
+    await request(app).post(`/api/championships/${autoChampId}/draw/start`);
+
+    const autoDrawRes = await request(app).post(`/api/championships/${autoChampId}/draw/auto-fill`);
+    expect(autoDrawRes.status).toBe(200);
+    expect(autoDrawRes.body.filledMatches).toBeGreaterThan(0);
+
+    const drawRes = await request(app).get(`/api/championships/${autoChampId}/draw/matches`);
+    const pendingPlayableMatches = drawRes.body.filter((match) =>
+      match.result === null &&
+      match.player1 &&
+      !match.player1.isBye &&
+      match.player2 &&
+      !match.player2.isBye
+    );
+    expect(pendingPlayableMatches).toHaveLength(0);
+
+    const fullChampRes = await request(app).get(`/api/championships/${autoChampId}`);
+    expect(fullChampRes.body.draw.completedMatches).toBe(fullChampRes.body.draw.matches.length);
+  });
 });
 
 // ── Ligue API ─────────────────────────────────────────────────────────────────
