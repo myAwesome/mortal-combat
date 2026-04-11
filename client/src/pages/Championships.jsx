@@ -85,7 +85,16 @@ function PointsConfigForm({ capacity, hasGroups, value, onChange }) {
   )
 }
 
-const emptyForm = { name: '', capacity: '', hasGroups: false, setsToWin: 2, ligueId: '', pointsConfig: null }
+const defaultDrawConfig = { playThirdPlaceMatch: true, playPlacementBrackets: true }
+const emptyForm = {
+  name: '',
+  capacity: '',
+  hasGroups: false,
+  setsToWin: 2,
+  ligueId: '',
+  pointsConfig: null,
+  drawConfig: { ...defaultDrawConfig },
+}
 
 export default function Championships() {
   const [champs, setChamps] = useState([])
@@ -128,6 +137,7 @@ export default function Championships() {
         capacity: Number(form.capacity),
         hasGroups: form.hasGroups,
         setsToWin: Number(form.setsToWin),
+        drawConfig: form.drawConfig,
         ligueId: form.ligueId ? Number(form.ligueId) : null,
         pointsConfig: form.pointsConfig,
       })
@@ -247,6 +257,34 @@ export default function Championships() {
                     <option value={2}>До 2 сетів</option>
                     <option value={3}>До 3 сетів</option>
                   </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingBottom: '2px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.875rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.drawConfig.playThirdPlaceMatch}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          drawConfig: { ...f.drawConfig, playThirdPlaceMatch: e.target.checked },
+                        }))
+                      }
+                    />
+                    <span>Матч за 3 місце</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.875rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.drawConfig.playPlacementBrackets}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          drawConfig: { ...f.drawConfig, playPlacementBrackets: e.target.checked },
+                        }))
+                      }
+                    />
+                    <span>Сітка за 5+ місця</span>
+                  </label>
                 </div>
               </div>
             </details>
