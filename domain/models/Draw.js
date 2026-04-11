@@ -86,10 +86,20 @@ class Draw {
 
     // Creates the next match for the loser
     const nextLoserId = this.getNextMatchId(match, false);
-    if (!this.matches.has(nextLoserId)) {
-      this.matches.set(nextLoserId, this.createNextMatch(match, false));
+    const nextLoserPrize = this.getPrizeForLoser(match);
+    const playThirdPlace = this.champ?.drawConfig?.playThirdPlaceMatch !== false;
+    const playPlacement = this.champ?.drawConfig?.playPlacementBrackets !== false;
+    const shouldCreateLoserMatch =
+      nextLoserPrize === 3 ? playThirdPlace : nextLoserPrize > 3 ? playPlacement : true;
+
+    if (shouldCreateLoserMatch) {
+      if (!this.matches.has(nextLoserId)) {
+        this.matches.set(nextLoserId, this.createNextMatch(match, false));
+      }
+      match.nextMatchForLoser = this.matches.get(nextLoserId);
+    } else {
+      match.nextMatchForLoser = null;
     }
-    match.nextMatchForLoser = this.matches.get(nextLoserId);
   };
 
   static calcPlacesPriority = (capacity) => {

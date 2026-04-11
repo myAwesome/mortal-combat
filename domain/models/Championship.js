@@ -10,9 +10,13 @@ const groupNames = [
   "N", "O", "P", "Q", "R", "S", "T", "V", "X", "Y", "Z"
 ];
 const BYE_PLAYER_NAME = "bye";
+const DEFAULT_DRAW_CONFIG = {
+  playThirdPlaceMatch: true,
+  playPlacementBrackets: true,
+};
 
 class Championship {
-  constructor(name, capacity, hasGroups = true, setsToWin = 1) {
+  constructor(name, capacity, hasGroups = true, setsToWin = 1, drawConfig = DEFAULT_DRAW_CONFIG) {
     if (![1, 2, 3].includes(Number(setsToWin))) {
       throw new Error("setsToWin must be 1, 2 or 3");
     }
@@ -20,6 +24,10 @@ class Championship {
     this.capacity = capacity;
     this.hasGroups = hasGroups;
     this.setsToWin = Number(setsToWin);
+    this.drawConfig = {
+      ...DEFAULT_DRAW_CONFIG,
+      ...(drawConfig || {}),
+    };
     this.players = null;
     this.points = null;
     this.groupPoints = null;
@@ -199,4 +207,5 @@ class Championship {
   calculateDrawCapacity = (players) => Math.pow(2, Math.ceil(Math.log2(players)));
 }
 
+Championship.DEFAULT_DRAW_CONFIG = DEFAULT_DRAW_CONFIG;
 exports.Championship = Championship;

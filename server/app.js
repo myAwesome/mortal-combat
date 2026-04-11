@@ -86,6 +86,7 @@ const serializeChampionship = (id, c) => ({
   capacity: c.capacity,
   hasGroups: c.hasGroups,
   setsToWin: c.setsToWin,
+  drawConfig: c.drawConfig,
   ligueId: c.ligueId || null,
   pointsConfig: c.points ? { playoff: c.points, group: c.groupPoints } : null,
   players: c.players
@@ -323,10 +324,32 @@ app.get('/api/championships', async (_req, res) => {
 });
 
 app.post('/api/championships', async (req, res) => {
-  const { name, capacity, hasGroups = true, ligueId = null, pointsConfig = null, setsToWin = 1 } = req.body;
+  const {
+    name,
+    capacity,
+    hasGroups = true,
+    ligueId = null,
+    pointsConfig = null,
+    setsToWin = 1,
+    drawConfig = null,
+  } = req.body;
   if (!name || !capacity) return res.status(400).json({ error: 'name and capacity are required' });
   if (![1, 2, 3].includes(Number(setsToWin))) {
     return res.status(400).json({ error: 'setsToWin must be 1, 2 or 3' });
+  }
+  if (drawConfig !== null) {
+    const hasThird = Object.prototype.hasOwnProperty.call(drawConfig, 'playThirdPlaceMatch');
+    const hasPlacement = Object.prototype.hasOwnProperty.call(drawConfig, 'playPlacementBrackets');
+    if (!hasThird || !hasPlacement) {
+      return res.status(400).json({
+        error: 'drawConfig must include playThirdPlaceMatch and playPlacementBrackets',
+      });
+    }
+    if (typeof drawConfig.playThirdPlaceMatch !== 'boolean' || typeof drawConfig.playPlacementBrackets !== 'boolean') {
+      return res.status(400).json({
+        error: 'drawConfig fields must be boolean values',
+      });
+    }
   }
   try {
     const { id, champ } = await repo.createChampionship(
@@ -335,7 +358,8 @@ app.post('/api/championships', async (req, res) => {
       hasGroups,
       ligueId,
       pointsConfig,
-      Number(setsToWin)
+      Number(setsToWin),
+      drawConfig
     );
     res.status(201).json(serializeChampionship(id, champ));
   } catch (e) {

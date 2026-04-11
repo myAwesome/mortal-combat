@@ -86,7 +86,8 @@ function serializeChampionshipState(champ) {
 
 function deserializeChampionshipState(row, playersMap) {
   const setsToWin = row.sets_to_win ? Number(row.sets_to_win) : 1;
-  const champ = new Championship(row.name, row.capacity, !!row.has_groups, setsToWin);
+  const drawConfig = row.draw_config_json ? JSON.parse(row.draw_config_json) : null;
+  const champ = new Championship(row.name, row.capacity, !!row.has_groups, setsToWin, drawConfig);
   champ.ligueId = row.ligue_id ? String(row.ligue_id) : null;
   champ.ligueSynced = !!row.ligue_synced;
 
@@ -217,7 +218,7 @@ async function deletePlayer(id) {
 
 async function getAllChampionships(playersMap) {
   const [rows] = await db.query(
-    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, sets_to_win, state_json FROM championships'
+    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, sets_to_win, draw_config_json, state_json FROM championships'
   );
   return rows.map(r => ({
     id: String(r.id),
@@ -227,7 +228,7 @@ async function getAllChampionships(playersMap) {
 
 async function getChampionshipById(id, playersMap) {
   const [rows] = await db.query(
-    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, sets_to_win, state_json FROM championships WHERE id = ?',
+    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, sets_to_win, draw_config_json, state_json FROM championships WHERE id = ?',
     [id]
   );
   if (!rows[0]) return null;
@@ -239,14 +240,23 @@ async function getChampionshipName(id) {
   return rows[0] ? rows[0].name : null;
 }
 
-async function createChampionship(name, capacity, hasGroups, ligueId = null, pointsConfig = null, setsToWin = 1) {
+async function createChampionship(
+  name,
+  capacity,
+  hasGroups,
+  ligueId = null,
+  pointsConfig = null,
+  setsToWin = 1,
+  drawConfig = null
+) {
   const configJson = pointsConfig ? JSON.stringify(pointsConfig) : null;
+  const drawConfigJson = drawConfig ? JSON.stringify(drawConfig) : null;
   const [result] = await db.query(
-    'INSERT INTO championships (name, capacity, has_groups, ligue_id, points_config_json, sets_to_win) VALUES (?, ?, ?, ?, ?, ?)',
-    [name, capacity, hasGroups ? 1 : 0, ligueId || null, configJson, Number(setsToWin)]
+    'INSERT INTO championships (name, capacity, has_groups, ligue_id, points_config_json, sets_to_win, draw_config_json) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [name, capacity, hasGroups ? 1 : 0, ligueId || null, configJson, Number(setsToWin), drawConfigJson]
   );
   const id = String(result.insertId);
-  const champ = new Championship(name, capacity, hasGroups, Number(setsToWin));
+  const champ = new Championship(name, capacity, hasGroups, Number(setsToWin), drawConfig);
   champ.points = pointsConfig ? pointsConfig.playoff : defaultPoints;
   champ.groupPoints = pointsConfig ? pointsConfig.group : defaultGroupPoints;
   champ.ligueId = ligueId ? String(ligueId) : null;

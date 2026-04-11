@@ -78,6 +78,10 @@ describe('Championships API - CRUD', () => {
     expect(res.status).toBe(201);
     expect(res.body.name).toBe('Test Open');
     expect(res.body.setsToWin).toBe(2);
+    expect(res.body.drawConfig).toEqual({
+      playThirdPlaceMatch: true,
+      playPlacementBrackets: true,
+    });
     expect(res.body.id).toBeDefined();
     id = res.body.id;
   });
@@ -344,6 +348,40 @@ describe('Full tournament flow', () => {
     expect(groupsRes.body.groups).toHaveLength(2);
     expect(groupsRes.body.groups[0].players.map((player) => player.name)).toEqual(manualPlayerNames.slice(0, 3));
     expect(groupsRes.body.groups[1].players.map((player) => player.name)).toEqual(manualPlayerNames.slice(3, 6));
+  });
+
+  test('draw config can disable third-place and 5th+ brackets', async () => {
+    const names = ['Cfg 1', 'Cfg 2', 'Cfg 3', 'Cfg 4', 'Cfg 5', 'Cfg 6', 'Cfg 7', 'Cfg 8'];
+    const ids = [];
+
+    for (const name of names) {
+      const res = await request(app).post('/api/players').send({ name });
+      ids.push(res.body.id);
+    }
+
+    const champRes = await request(app)
+      .post('/api/championships')
+      .send({
+        name: 'Config Cup',
+        capacity: 8,
+        hasGroups: false,
+        drawConfig: {
+          playThirdPlaceMatch: false,
+          playPlacementBrackets: false,
+        },
+      });
+    const configChampId = champRes.body.id;
+
+    await request(app)
+      .post(`/api/championships/${configChampId}/entry-list`)
+      .send({ playerIds: ids });
+    await request(app).post(`/api/championships/${configChampId}/draw`);
+    const startRes = await request(app).post(`/api/championships/${configChampId}/draw/start`);
+
+    expect(startRes.status).toBe(200);
+    expect(startRes.body.draw.matches).toHaveLength(7);
+    expect(startRes.body.draw.matches.some((m) => m.prize === 3)).toBe(false);
+    expect(startRes.body.draw.matches.some((m) => m.prize > 3)).toBe(false);
   });
 });
 

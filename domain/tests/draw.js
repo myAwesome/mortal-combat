@@ -37,4 +37,22 @@ describe("Draw", () => {
     expect(placesPriority[6]).toBe(7);
     expect(placesPriority[7]).toBe(2);
   });
+
+  test("can disable third-place match in draw config", () => {
+    const draw8 = new Draw(8, { drawConfig: { playThirdPlaceMatch: false, playPlacementBrackets: true } });
+    draw8.createMatches(8);
+    expect(draw8.matches.size).toBe(11);
+  });
+
+  test("can disable placement brackets (5th+ places) in draw config", () => {
+    const draw8 = new Draw(8, { drawConfig: { playThirdPlaceMatch: true, playPlacementBrackets: false } });
+    draw8.createMatches(8);
+    expect(draw8.matches.size).toBe(8);
+  });
+
+  test("can disable both third-place and placement brackets", () => {
+    const draw8 = new Draw(8, { drawConfig: { playThirdPlaceMatch: false, playPlacementBrackets: false } });
+    draw8.createMatches(8);
+    expect(draw8.matches.size).toBe(7);
+  });
 });
