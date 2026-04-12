@@ -45,6 +45,7 @@ const generateAutoResult = (setsToWin) => {
 const serializeSet = (set) => set ? set.toString() : null;
 
 const serializeGroupPlayer = (gp) => ({
+  id: gp.player.id,
   name: gp.player.name,
   points: gp.groupMetadata.points,
   win: gp.groupMetadata.win,
@@ -493,13 +494,18 @@ app.post('/api/championships/:id/draw/start', async (req, res) => {
 
     const { champ, id } = found;
     if (!champ.draw) return res.status(400).json({ error: 'Draw not created yet' });
+    const { manualPlayerIds = null } = req.body || {};
 
     if (champ.hasGroups) {
       champ.addPointsAccordingToPlace();
       champ.joinedGroupsResult = champ.createJoinedGroupsResult(champ.groups);
     }
     champ.prepareQualifiersForDraw();
-    champ.seedDrawPlayers();
+    if (Array.isArray(manualPlayerIds)) {
+      champ.seedDrawPlayersManual(manualPlayerIds);
+    } else {
+      champ.seedDrawPlayers();
+    }
     champ.startDraw();
     await repo.saveChampionshipState(id, champ);
     res.json(serializeChampionship(id, champ));

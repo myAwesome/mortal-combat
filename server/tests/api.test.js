@@ -350,6 +350,41 @@ describe('Full tournament flow', () => {
     expect(groupsRes.body.groups[1].players.map((player) => player.name)).toEqual(manualPlayerNames.slice(3, 6));
   });
 
+  test('POST draw/start - supports manual draw seeding', async () => {
+    const manualDrawNames = ['Manual Draw 1', 'Manual Draw 2', 'Manual Draw 3', 'Manual Draw 4'];
+    const manualDrawPlayerIds = [];
+
+    for (const name of manualDrawNames) {
+      const res = await request(app).post('/api/players').send({ name });
+      manualDrawPlayerIds.push(res.body.id);
+    }
+
+    const champRes = await request(app)
+      .post('/api/championships')
+      .send({ name: 'Manual Draw Cup', capacity: 4, hasGroups: false, setsToWin: 1 });
+    const manualDrawChampId = champRes.body.id;
+
+    await request(app)
+      .post(`/api/championships/${manualDrawChampId}/entry-list`)
+      .send({ playerIds: manualDrawPlayerIds });
+
+    await request(app).post(`/api/championships/${manualDrawChampId}/draw`);
+    const startRes = await request(app)
+      .post(`/api/championships/${manualDrawChampId}/draw/start`)
+      .send({ manualPlayerIds: manualDrawPlayerIds });
+
+    expect(startRes.status).toBe(200);
+    const firstRound = startRes.body.draw.matches
+      .filter((m) => m.playersInRound === 4 && m.prize === 1)
+      .sort((a, b) => a.matchNumberInRound - b.matchNumberInRound);
+
+    expect(firstRound).toHaveLength(2);
+    expect(firstRound[0].player1.name).toBe(manualDrawNames[0]);
+    expect(firstRound[0].player2.name).toBe(manualDrawNames[1]);
+    expect(firstRound[1].player1.name).toBe(manualDrawNames[2]);
+    expect(firstRound[1].player2.name).toBe(manualDrawNames[3]);
+  });
+
   test('draw config can disable third-place and 5th+ brackets', async () => {
     const names = ['Cfg 1', 'Cfg 2', 'Cfg 3', 'Cfg 4', 'Cfg 5', 'Cfg 6', 'Cfg 7', 'Cfg 8'];
     const ids = [];

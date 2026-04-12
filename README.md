@@ -86,7 +86,7 @@ MySQL is expected to already be running locally with those credentials.
 | `POST` | `/api/championships/:id/entry-list` | Set player entry list (`playerIds` array) |
 | `POST` | `/api/championships/:id/groups` | Create group stage (optional `optimalGroupSize`, default 3) |
 | `POST` | `/api/championships/:id/draw` | Create playoff draw |
-| `POST` | `/api/championships/:id/draw/start` | Seed qualified players and start playoff |
+| `POST` | `/api/championships/:id/draw/start` | Seed qualified players and start playoff (auto or manual with `manualPlayerIds`) |
 
 ### Groups
 
@@ -125,7 +125,7 @@ MySQL is expected to already be running locally with those credentials.
 1. **Entry List** — add players to a championship
 2. **Group Stage** *(optional)* — round-robin groups; points awarded by finishing place
 3. **Create Draw** — generate playoff bracket (power-of-2 capacity)
-4. **Start Draw** — seed qualified players using serpentine algorithm
+4. **Start Draw** — seed qualified players using serpentine algorithm or manually assign slots
 5. **Playoff** — record bracket match results; bye matches advance automatically
 6. **League Sync** *(optional)* — championship points aggregated to ligue standings
 

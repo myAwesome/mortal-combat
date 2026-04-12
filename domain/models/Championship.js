@@ -138,6 +138,43 @@ class Championship {
     })).sort((a, b) => a.location - b.location);
   };
 
+  seedDrawPlayersManual = (manualPlayerIds = []) => {
+    if (!Array.isArray(manualPlayerIds)) {
+      throw new Error("manualPlayerIds must be an array");
+    }
+    if (manualPlayerIds.length !== this.draw.capacity) {
+      throw new Error(`manualPlayerIds must contain exactly ${this.draw.capacity} slots`);
+    }
+
+    const qualifierSource = this.hasGroups ? this.joinedGroupsResult : this.players;
+    const qualifiers = qualifierSource.slice(0, this.draw.qualifiers);
+    const playersById = new Map(
+      qualifiers.map((entry) => [String(entry.player?.id), entry.player])
+    );
+    const assigned = new Set();
+
+    this.drawPlayersWithLocation = manualPlayerIds.map((playerId, index) => {
+      if (playerId === null || playerId === undefined || playerId === "") {
+        return { player: { name: BYE_PLAYER_NAME }, location: index + 1 };
+      }
+
+      const key = String(playerId);
+      const player = playersById.get(key);
+      if (!player) {
+        throw new Error(`Player ${key} is not a qualified draw participant`);
+      }
+      if (assigned.has(key)) {
+        throw new Error(`Player ${key} assigned to multiple draw slots`);
+      }
+      assigned.add(key);
+      return { player, location: index + 1 };
+    });
+
+    if (assigned.size !== playersById.size) {
+      throw new Error("Assign every qualified player exactly once");
+    }
+  };
+
   createJoinedGroupsResult = (groups) => {
     const maxGroupCapacity = Math.max(...groups.map(group => group.players.length));
     const result = [];
