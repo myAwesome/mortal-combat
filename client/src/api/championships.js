@@ -42,7 +42,7 @@ export const createGroups = (id, options = {}) => {
 
 export const createDraw = (id) => post(`${BASE}/${id}/draw`)
 
-export const startDraw = (id) => post(`${BASE}/${id}/draw/start`)
+export const startDraw = (id, options = {}) => post(`${BASE}/${id}/draw/start`, options)
 
 export const recordGroupMatch = (champId, groupName, matchId, result) =>
   fetch(`${BASE}/${champId}/groups/${groupName}/matches/${matchId}`, {
