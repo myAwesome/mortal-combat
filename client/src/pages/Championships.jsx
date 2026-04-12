@@ -329,7 +329,6 @@ export default function Championships() {
                     <td style={{ color: 'var(--color-text-muted)' }}>{c.capacity}</td>
                     <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
                       {(c.hasGroups ? 'Groups + Playoff' : 'Playoff only')}
-                      <span style={{ marginLeft: '0.4rem' }}>• {getMatchFormatLabel(c.setsToWin || 1)}</span>
                     </td>
                     <td style={{ fontSize: '0.8rem' }}>
                       {c.ligueId

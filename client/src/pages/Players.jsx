@@ -86,7 +86,6 @@ export default function Players() {
           <table>
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Name</th>
                 <th></th>
               </tr>
@@ -94,7 +93,6 @@ export default function Players() {
             <tbody>
               {players.map((p) => (
                 <tr key={p.id}>
-                  <td style={{ color: 'var(--color-text-muted)', width: '60px' }}>{p.id}</td>
                   <td>
                     {editingId === p.id ? (
                       <form

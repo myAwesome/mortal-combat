@@ -115,7 +115,6 @@ export default function ChampionshipDetail() {
           <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
             <span>Capacity: {champ.capacity}</span>
             <span>{champ.hasGroups ? 'Groups + Playoff' : 'Playoff only'}</span>
-            <span>{getMatchFormatLabel(champ.setsToWin || 1)}</span>
             {champ.players?.length > 0 && (
               <span>{champ.players.length} players enrolled</span>
             )}
