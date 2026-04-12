@@ -4,9 +4,9 @@ Platform for automation and digitalization of tennis tournament management.
 
 ## Screenshots
 
-![Championship view 1](.vibe-attachments/c8c1a630-7a21-4b67-93e3-2bbef7830e15_localhost_5173_championships_6.png)
+![Championship view 1](docs/playoff-only.png)
 
-![Championship view 2](.vibe-attachments/69cc7615-7c5e-48a2-b4ee-2dc6c8d52b98_localhost_5173_championships_11.png)
+![Championship view 2](docs/with-groups.png)
 
 ## Stack
 
