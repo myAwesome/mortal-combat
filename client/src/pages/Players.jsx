@@ -22,16 +22,17 @@ export default function Players() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
   const start = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE
+  const searchValue = search.trim()
+  const isSearchActive = searchValue.length >= 3
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const searchValue = search.trim()
       const result = await getPlayers({
         limit: PAGE_SIZE,
         offset: (currentPage - 1) * PAGE_SIZE,
-        search: searchValue,
+        search: isSearchActive ? searchValue : undefined,
       })
       setPlayers(result.items || [])
       setTotal(Number(result.total || 0))
@@ -40,7 +41,7 @@ export default function Players() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, search])
+  }, [currentPage, isSearchActive, searchValue])
 
   useEffect(() => { load() }, [load])
 
@@ -122,7 +123,7 @@ export default function Players() {
       <div className="card">
         {total === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', padding: '1rem 0' }}>
-            {search.trim() ? 'No players found.' : 'No players yet.'}
+            {isSearchActive ? 'No players found.' : 'No players yet.'}
           </p>
         ) : (
           <>
