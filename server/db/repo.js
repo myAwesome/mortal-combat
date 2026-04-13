@@ -189,9 +189,39 @@ function deserializeChampionshipState(row, playersMap) {
 
 // ── Players ───────────────────────────────────────────────────────────────────
 
-async function getAllPlayersList() {
-  const [rows] = await db.query('SELECT id, name FROM players');
-  return rows.map(r => ({ id: String(r.id), name: r.name }));
+async function getAllPlayersList(options = {}) {
+  const hasPagination =
+    options.limit !== undefined || options.offset !== undefined || options.search !== undefined;
+
+  if (!hasPagination) {
+    const [rows] = await db.query('SELECT id, name FROM players');
+    return rows.map(r => ({ id: String(r.id), name: r.name }));
+  }
+
+  const limit = Math.max(1, Math.min(100, Number(options.limit) || 10));
+  const offset = Math.max(0, Number(options.offset) || 0);
+  const search = String(options.search || '').trim();
+
+  const whereClause = search ? 'WHERE name LIKE ?' : '';
+  const whereParams = search ? [`%${search}%`] : [];
+
+  const [countRows] = await db.query(
+    `SELECT COUNT(*) AS total FROM players ${whereClause}`,
+    whereParams
+  );
+  const total = Number(countRows[0]?.total || 0);
+
+  const [rows] = await db.query(
+    `SELECT id, name FROM players ${whereClause} ORDER BY name ASC, id ASC LIMIT ? OFFSET ?`,
+    [...whereParams, limit, offset]
+  );
+
+  return {
+    items: rows.map(r => ({ id: String(r.id), name: r.name })),
+    total,
+    limit,
+    offset,
+  };
 }
 
 async function getPlayerRow(id) {

@@ -6,7 +6,16 @@ const handleResponse = async (res) => {
   return Promise.reject(err)
 }
 
-export const getPlayers = () => fetch(BASE).then(handleResponse)
+export const getPlayers = (params) => {
+  if (!params) return fetch(BASE).then(handleResponse)
+
+  const query = new URLSearchParams()
+  if (params.limit !== undefined) query.set('limit', String(params.limit))
+  if (params.offset !== undefined) query.set('offset', String(params.offset))
+  if (params.search !== undefined) query.set('search', String(params.search))
+
+  return fetch(`${BASE}?${query.toString()}`).then(handleResponse)
+}
 
 export const getPlayer = (id) => fetch(`${BASE}/${id}`).then(handleResponse)
 
