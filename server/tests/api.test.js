@@ -33,6 +33,26 @@ describe('Players API', () => {
     expect(res.body.find((p) => p.id === id)).toBeDefined();
   });
 
+  test('GET /api/players - supports server pagination and search', async () => {
+    const names = ['SrvPage Alpha', 'SrvPage Bravo', 'SrvPage Charlie'];
+    for (const name of names) {
+      const createRes = await request(app).post('/api/players').send({ name });
+      expect(createRes.status).toBe(201);
+    }
+
+    const res = await request(app)
+      .get('/api/players')
+      .query({ limit: 2, offset: 1, search: 'SrvPage' });
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(res.body.items).toHaveLength(2);
+    expect(res.body.total).toBe(3);
+    expect(res.body.limit).toBe(2);
+    expect(res.body.offset).toBe(1);
+    expect(res.body.items.every((p) => p.name.includes('SrvPage'))).toBe(true);
+  });
+
   test('GET /api/players/:id - gets player by id', async () => {
     const res = await request(app).get(`/api/players/${id}`);
     expect(res.status).toBe(200);

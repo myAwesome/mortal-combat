@@ -106,10 +106,24 @@ const serializeChampionship = (id, c) => ({
 
 // ── Players ──────────────────────────────────────────────────────────────────
 
-app.get('/api/players', async (_req, res) => {
+app.get('/api/players', async (req, res) => {
   try {
+    const hasQueryParams =
+      req.query.limit !== undefined ||
+      req.query.offset !== undefined ||
+      req.query.search !== undefined;
+
+    if (hasQueryParams) {
+      const result = await repo.getAllPlayersList({
+        limit: req.query.limit,
+        offset: req.query.offset,
+        search: req.query.search,
+      });
+      return res.json(result);
+    }
+
     const list = await repo.getAllPlayersList();
-    res.json(list);
+    return res.json(list);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

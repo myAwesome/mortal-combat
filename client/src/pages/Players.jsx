@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getPlayers, createPlayer, updatePlayer, deletePlayer } from '../api/players'
 import Spinner from '../components/Spinner'
@@ -9,6 +9,7 @@ const PAGE_SIZE = 10
 
 export default function Players() {
   const [players, setPlayers] = useState([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [newName, setNewName] = useState('')
@@ -16,14 +17,32 @@ export default function Players() {
   const [editingId, setEditingId] = useState(null)
   const [editName, setEditName] = useState('')
   const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
 
-  const load = () => getPlayers().then(setPlayers).finally(() => setLoading(false))
-  useEffect(() => { load() }, [])
-
-  const totalPages = Math.max(1, Math.ceil(players.length / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
-  const start = (currentPage - 1) * PAGE_SIZE
-  const pagedPlayers = players.slice(start, start + PAGE_SIZE)
+  const start = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const searchValue = search.trim()
+      const result = await getPlayers({
+        limit: PAGE_SIZE,
+        offset: (currentPage - 1) * PAGE_SIZE,
+        search: searchValue,
+      })
+      setPlayers(result.items || [])
+      setTotal(Number(result.total || 0))
+    } catch (err) {
+      setError(err)
+    } finally {
+      setLoading(false)
+    }
+  }, [currentPage, search])
+
+  useEffect(() => { load() }, [load])
 
   useEffect(() => {
     if (page !== currentPage) setPage(currentPage)
@@ -33,7 +52,6 @@ export default function Players() {
     e.preventDefault()
     if (!newName.trim()) return
     setCreating(true)
-    setError(null)
     try {
       await createPlayer(newName.trim())
       setNewName('')
@@ -47,7 +65,6 @@ export default function Players() {
 
   const handleEdit = async (id) => {
     if (!editName.trim()) return
-    setError(null)
     try {
       await updatePlayer(id, editName.trim())
       setEditingId(null)
@@ -58,7 +75,6 @@ export default function Players() {
   }
 
   const handleDelete = async (id) => {
-    setError(null)
     try {
       await deletePlayer(id)
       await load()
@@ -91,9 +107,23 @@ export default function Players() {
         </form>
       </div>
 
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <input
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setPage(1)
+          }}
+          placeholder="Search players"
+          style={{ width: '100%' }}
+        />
+      </div>
+
       <div className="card">
-        {players.length === 0 ? (
-          <p style={{ color: 'var(--color-text-muted)', padding: '1rem 0' }}>No players yet.</p>
+        {total === 0 ? (
+          <p style={{ color: 'var(--color-text-muted)', padding: '1rem 0' }}>
+            {search.trim() ? 'No players found.' : 'No players yet.'}
+          </p>
         ) : (
           <>
             <table>
@@ -104,7 +134,7 @@ export default function Players() {
                 </tr>
               </thead>
               <tbody>
-                {pagedPlayers.map((p) => (
+                {players.map((p) => (
                   <tr key={p.id}>
                     <td>
                       {editingId === p.id ? (
@@ -164,7 +194,7 @@ export default function Players() {
               }}
             >
               <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                Showing {start + 1}-{Math.min(start + PAGE_SIZE, players.length)} of {players.length}
+                Showing {start + 1}-{Math.min(start + players.length, total)} of {total}
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <button
@@ -182,7 +212,7 @@ export default function Players() {
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
+                  disabled={currentPage === totalPages || players.length === 0}
                 >
                   Next
                 </button>
