@@ -5,31 +5,70 @@ import ErrorMessage from '../../components/ErrorMessage'
 import Spinner from '../../components/Spinner'
 
 export default function EntryListStep({ champ, onDone }) {
-  const [allPlayers, setAllPlayers] = useState([])
   const [selected, setSelected] = useState(new Set())
+  const [selectedById, setSelectedById] = useState({})
   const [search, setSearch] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [searchResults, setSearchResults] = useState([])
+  const [loadingSearch, setLoadingSearch] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    getPlayers()
-      .then((players) => {
-        setAllPlayers(players)
-        // Pre-select existing entry list
-        if (champ.players?.length > 0) {
-          const existing = new Set(champ.players.map((p) => String(p.id)).filter(Boolean))
-          setSelected(existing)
-        }
-      })
-      .finally(() => setLoading(false))
-  }, [champ.id])
+    const existingPlayers = (champ.players || []).filter((p) => p?.id !== undefined && p?.id !== null)
+    setSelected(new Set(existingPlayers.map((p) => String(p.id))))
+    setSelectedById(
+      existingPlayers.reduce((acc, player) => {
+        acc[String(player.id)] = player
+        return acc
+      }, {})
+    )
+    setSearch('')
+    setSearchResults([])
+  }, [champ.id, champ.players])
 
-  const toggle = (id) => {
+  useEffect(() => {
+    const query = search.trim()
+    if (query.length < 3) {
+      setSearchResults([])
+      setLoadingSearch(false)
+      return
+    }
+
+    let cancelled = false
+    setLoadingSearch(true)
+    setError(null)
+
+    getPlayers({ search: query, limit: 50, offset: 0 })
+      .then((result) => {
+        if (cancelled) return
+        setSearchResults(result.items || [])
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setError(err)
+      })
+      .finally(() => {
+        if (cancelled) return
+        setLoadingSearch(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [search])
+
+  const toggle = (player) => {
+    const id = String(player.id)
     setSelected((prev) => {
       const next = new Set(prev)
-      if (next.has(String(id))) next.delete(String(id))
-      else next.add(String(id))
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+    setSelectedById((prev) => {
+      const next = { ...prev }
+      if (next[id]) delete next[id]
+      else next[id] = player
       return next
     })
   }
@@ -47,14 +86,10 @@ export default function EntryListStep({ champ, onDone }) {
     }
   }
 
-  if (loading) return <Spinner />
-
   const overCapacity = selected.size > champ.capacity
-  const searchValue = search.trim().toLowerCase()
+  const searchValue = search.trim()
   const isSearchActive = searchValue.length >= 3
-  const visiblePlayers = isSearchActive
-    ? allPlayers.filter((player) => player.name.toLowerCase().includes(searchValue))
-    : []
+  const selectedPlayers = Array.from(selected).map((id) => selectedById[id]).filter(Boolean)
 
   return (
     <div className="card">
@@ -65,30 +100,49 @@ export default function EntryListStep({ champ, onDone }) {
 
       <ErrorMessage error={error} />
 
-      {allPlayers.length === 0 ? (
-        <p style={{ color: 'var(--color-text-muted)' }}>No players available. Add players first.</p>
-      ) : (
-        <>
-          <div style={{ marginBottom: '1rem' }}>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search player (min 3 chars)"
-              style={{ width: '100%' }}
-            />
-          </div>
+      <div style={{ marginBottom: '1rem' }}>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search player (min 3 chars)"
+          style={{ width: '100%' }}
+        />
+      </div>
 
-          {!isSearchActive ? (
-            <p style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
-              Type at least 3 characters to start searching players.
-            </p>
-          ) : visiblePlayers.length === 0 ? (
-            <p style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
-              No players found.
-            </p>
-          ) : (
+      {selectedPlayers.length > 0 && (
+        <div style={{ marginBottom: '1rem' }}>
+          <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+            Selected players:
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {selectedPlayers.map((player) => (
+              <button
+                key={player.id}
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => toggle(player)}
+                title="Remove player"
+              >
+                {player.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isSearchActive ? (
+        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+          Type at least 3 characters to start searching players.
+        </p>
+      ) : loadingSearch ? (
+        <Spinner />
+      ) : searchResults.length === 0 ? (
+        <p style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+          No players found.
+        </p>
+      ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
-            {visiblePlayers.map((p) => {
+            {searchResults.map((p) => {
               const checked = selected.has(String(p.id))
               return (
                 <label
@@ -110,7 +164,7 @@ export default function EntryListStep({ champ, onDone }) {
                   <input
                     type="checkbox"
                     checked={checked}
-                    onChange={() => toggle(p.id)}
+                    onChange={() => toggle(p)}
                     style={{ accentColor: 'var(--color-primary)' }}
                   />
                   {p.name}
@@ -118,22 +172,20 @@ export default function EntryListStep({ champ, onDone }) {
               )
             })}
           </div>
-          )}
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '0.875rem', color: overCapacity ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
-              {selected.size} / {champ.capacity} selected
-            </span>
-            <button
-              className="btn"
-              onClick={handleSubmit}
-              disabled={saving || selected.size === 0 || overCapacity}
-            >
-              {saving ? 'Saving…' : 'Set Entry List'}
-            </button>
-          </div>
-        </>
       )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <span style={{ fontSize: '0.875rem', color: overCapacity ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
+          {selected.size} / {champ.capacity} selected
+        </span>
+        <button
+          className="btn"
+          onClick={handleSubmit}
+          disabled={saving || selected.size === 0 || overCapacity}
+        >
+          {saving ? 'Saving…' : 'Set Entry List'}
+        </button>
+      </div>
     </div>
   )
 }
