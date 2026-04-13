@@ -84,8 +84,6 @@ export default function Players() {
     }
   }
 
-  if (loading) return <Spinner />
-
   return (
     <div>
       <div className="page-header">
@@ -121,7 +119,9 @@ export default function Players() {
       </div>
 
       <div className="card">
-        {total === 0 ? (
+        {loading ? (
+          <Spinner />
+        ) : total === 0 ? (
           <p style={{ color: 'var(--color-text-muted)', padding: '1rem 0' }}>
             {isSearchActive ? 'No players found.' : 'No players yet.'}
           </p>
