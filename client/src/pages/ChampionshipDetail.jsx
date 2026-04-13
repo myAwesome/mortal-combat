@@ -27,6 +27,19 @@ function getRoundLossLabel(playersInRound) {
   return `R${playersInRound}`
 }
 
+function formatDate(value) {
+  if (!value) return null
+  const parsed = new Date(`${value}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) return value
+  return parsed.toLocaleDateString()
+}
+
+function formatDateRange(startDate, endDate) {
+  if (!startDate && !endDate) return null
+  if (startDate && endDate) return `${formatDate(startDate)} - ${formatDate(endDate)}`
+  return startDate ? `${formatDate(startDate)} -` : `- ${formatDate(endDate)}`
+}
+
 function buildResultByPlayer(champ) {
   const resultByName = new Map()
   const matches = champ.draw?.matches || []
@@ -101,6 +114,7 @@ export default function ChampionshipDetail() {
   const stage = deriveStage(champ)
   const sortedByPoints = [...(champ.players || [])].sort((a, b) => (b.points || 0) - (a.points || 0))
   const resultByPlayer = buildResultByPlayer(champ)
+  const dateRange = formatDateRange(champ.startDate, champ.endDate)
 
   return (
     <div>
@@ -114,6 +128,7 @@ export default function ChampionshipDetail() {
           <h1>{champ.name}</h1>
           <div style={{ display: 'flex', gap: '1rem', marginTop: '0.25rem', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
             <span>Capacity: {champ.capacity}</span>
+            {dateRange && <span>Dates: {dateRange}</span>}
             <span>{champ.hasGroups ? 'Groups + Playoff' : 'Playoff only'}</span>
             {champ.players?.length > 0 && (
               <span>{champ.players.length} players enrolled</span>

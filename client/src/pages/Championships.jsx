@@ -86,9 +86,25 @@ function PointsConfigForm({ capacity, hasGroups, value, onChange }) {
 }
 
 const defaultDrawConfig = { playThirdPlaceMatch: true, playPlacementBrackets: true }
+
+function formatDate(value) {
+  if (!value) return '—'
+  const parsed = new Date(`${value}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) return value
+  return parsed.toLocaleDateString()
+}
+
+function formatDateRange(startDate, endDate) {
+  if (!startDate && !endDate) return '—'
+  if (startDate && endDate) return `${formatDate(startDate)} - ${formatDate(endDate)}`
+  return startDate ? `${formatDate(startDate)} -` : `- ${formatDate(endDate)}`
+}
+
 const emptyForm = {
   name: '',
   capacity: '',
+  startDate: '',
+  endDate: '',
   hasGroups: false,
   setsToWin: 2,
   ligueId: '',
@@ -135,6 +151,8 @@ export default function Championships() {
       await createChampionship({
         name: form.name.trim(),
         capacity: Number(form.capacity),
+        startDate: form.startDate || null,
+        endDate: form.endDate || null,
         hasGroups: form.hasGroups,
         setsToWin: Number(form.setsToWin),
         drawConfig: form.drawConfig,
@@ -204,6 +222,29 @@ export default function Championships() {
                   placeholder="8"
                   min="2"
                   style={{ width: '90px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                  START DATE
+                </label>
+                <input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => setForm((f) => ({ ...f, startDate: e.target.value }))}
+                  style={{ width: '160px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', marginBottom: '0.25rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                  END DATE
+                </label>
+                <input
+                  type="date"
+                  value={form.endDate}
+                  min={form.startDate || undefined}
+                  onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
+                  style={{ width: '160px' }}
                 />
               </div>
               <div>
@@ -310,6 +351,7 @@ export default function Championships() {
               <tr>
                 <th>Name</th>
                 <th>Capacity</th>
+                <th>Dates</th>
                 <th>Format</th>
                 <th>Ligue</th>
                 <th>Status</th>
@@ -327,6 +369,9 @@ export default function Championships() {
                       </Link>
                     </td>
                     <td style={{ color: 'var(--color-text-muted)' }}>{c.capacity}</td>
+                    <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
+                      {formatDateRange(c.startDate, c.endDate)}
+                    </td>
                     <td style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>
                       {(c.hasGroups ? 'Groups + Playoff' : 'Playoff only')}
                     </td>

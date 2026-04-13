@@ -102,6 +102,8 @@ describe('Championships API - CRUD', () => {
       playThirdPlaceMatch: true,
       playPlacementBrackets: true,
     });
+    expect(res.body.startDate).toBeNull();
+    expect(res.body.endDate).toBeNull();
     expect(res.body.id).toBeDefined();
     id = res.body.id;
   });
@@ -125,6 +127,15 @@ describe('Championships API - CRUD', () => {
       .send({ name: 'Updated Open' });
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Updated Open');
+  });
+
+  test('PUT /api/championships/:id - updates dates', async () => {
+    const res = await request(app)
+      .put(`/api/championships/${id}`)
+      .send({ startDate: '2026-06-01', endDate: '2026-06-07' });
+    expect(res.status).toBe(200);
+    expect(res.body.startDate).toBe('2026-06-01');
+    expect(res.body.endDate).toBe('2026-06-07');
   });
 
   test('DELETE /api/championships/:id - deletes championship', async () => {

@@ -26,6 +26,15 @@ async function loadPlayersMap() {
   return map;
 }
 
+function normalizeDateValue(value) {
+  if (!value) return null;
+  if (typeof value === 'string') return value.slice(0, 10);
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  return null;
+}
+
 // ── Championship serialization ────────────────────────────────────────────────
 
 function serializeChampionshipState(champ) {
@@ -90,6 +99,8 @@ function deserializeChampionshipState(row, playersMap) {
   const champ = new Championship(row.name, row.capacity, !!row.has_groups, setsToWin, drawConfig);
   champ.ligueId = row.ligue_id ? String(row.ligue_id) : null;
   champ.ligueSynced = !!row.ligue_synced;
+  champ.startDate = normalizeDateValue(row.start_date);
+  champ.endDate = normalizeDateValue(row.end_date);
 
   const config = row.points_config_json ? JSON.parse(row.points_config_json) : null;
   champ.points = config ? config.playoff : defaultPoints;
@@ -248,7 +259,7 @@ async function deletePlayer(id) {
 
 async function getAllChampionships(playersMap) {
   const [rows] = await db.query(
-    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, sets_to_win, draw_config_json, state_json FROM championships'
+    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, sets_to_win, draw_config_json, start_date, end_date, state_json FROM championships'
   );
   return rows.map(r => ({
     id: String(r.id),
@@ -258,7 +269,7 @@ async function getAllChampionships(playersMap) {
 
 async function getChampionshipById(id, playersMap) {
   const [rows] = await db.query(
-    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, sets_to_win, draw_config_json, state_json FROM championships WHERE id = ?',
+    'SELECT id, name, capacity, has_groups, ligue_id, ligue_synced, points_config_json, sets_to_win, draw_config_json, start_date, end_date, state_json FROM championships WHERE id = ?',
     [id]
   );
   if (!rows[0]) return null;
@@ -277,13 +288,15 @@ async function createChampionship(
   ligueId = null,
   pointsConfig = null,
   setsToWin = 1,
-  drawConfig = null
+  drawConfig = null,
+  startDate = null,
+  endDate = null
 ) {
   const configJson = pointsConfig ? JSON.stringify(pointsConfig) : null;
   const drawConfigJson = drawConfig ? JSON.stringify(drawConfig) : null;
   const [result] = await db.query(
-    'INSERT INTO championships (name, capacity, has_groups, ligue_id, points_config_json, sets_to_win, draw_config_json) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [name, capacity, hasGroups ? 1 : 0, ligueId || null, configJson, Number(setsToWin), drawConfigJson]
+    'INSERT INTO championships (name, capacity, has_groups, ligue_id, points_config_json, sets_to_win, draw_config_json, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [name, capacity, hasGroups ? 1 : 0, ligueId || null, configJson, Number(setsToWin), drawConfigJson, startDate, endDate]
   );
   const id = String(result.insertId);
   const champ = new Championship(name, capacity, hasGroups, Number(setsToWin), drawConfig);
@@ -291,6 +304,8 @@ async function createChampionship(
   champ.groupPoints = pointsConfig ? pointsConfig.group : defaultGroupPoints;
   champ.ligueId = ligueId ? String(ligueId) : null;
   champ.ligueSynced = false;
+  champ.startDate = normalizeDateValue(startDate);
+  champ.endDate = normalizeDateValue(endDate);
   return { id, champ };
 }
 
@@ -301,6 +316,8 @@ async function updateChampionshipFields(id, updates) {
   if (updates.capacity !== undefined)  { parts.push('capacity = ?');   params.push(updates.capacity); }
   if (updates.hasGroups !== undefined) { parts.push('has_groups = ?'); params.push(updates.hasGroups ? 1 : 0); }
   if (updates.setsToWin !== undefined) { parts.push('sets_to_win = ?'); params.push(Number(updates.setsToWin)); }
+  if (updates.startDate !== undefined) { parts.push('start_date = ?'); params.push(updates.startDate); }
+  if (updates.endDate !== undefined)   { parts.push('end_date = ?'); params.push(updates.endDate); }
   if (parts.length === 0) return true;
   params.push(id);
   const [result] = await db.query(
