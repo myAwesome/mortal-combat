@@ -167,6 +167,17 @@ app.get('/api/players/:id', async (req, res) => {
   }
 });
 
+app.get('/api/players/:id/matches', async (req, res) => {
+  try {
+    const p = await repo.getPlayerRow(req.params.id);
+    if (!p) return res.status(404).json({ error: 'Player not found' });
+    const grouped = await repo.getPlayerMatchesGroupedByChampionship(req.params.id);
+    res.json(grouped);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.put('/api/players/:id', async (req, res) => {
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });

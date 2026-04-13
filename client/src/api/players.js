@@ -18,6 +18,7 @@ export const getPlayers = (params) => {
 }
 
 export const getPlayer = (id) => fetch(`${BASE}/${id}`).then(handleResponse)
+export const getPlayerMatches = (id) => fetch(`${BASE}/${id}/matches`).then(handleResponse)
 
 export const createPlayer = (name) =>
   fetch(BASE, {
