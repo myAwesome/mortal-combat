@@ -7,6 +7,7 @@ import Spinner from '../../components/Spinner'
 export default function EntryListStep({ champ, onDone }) {
   const [allPlayers, setAllPlayers] = useState([])
   const [selected, setSelected] = useState(new Set())
+  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -49,12 +50,17 @@ export default function EntryListStep({ champ, onDone }) {
   if (loading) return <Spinner />
 
   const overCapacity = selected.size > champ.capacity
+  const searchValue = search.trim().toLowerCase()
+  const isSearchActive = searchValue.length >= 3
+  const visiblePlayers = isSearchActive
+    ? allPlayers.filter((player) => player.name.toLowerCase().includes(searchValue))
+    : []
 
   return (
     <div className="card">
       <h2 style={{ marginBottom: '0.25rem', fontSize: '1rem' }}>Entry List</h2>
       <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-        Select up to {champ.capacity} players to enter this championship.
+        Search and select up to {champ.capacity} players to enter this championship.
       </p>
 
       <ErrorMessage error={error} />
@@ -63,8 +69,26 @@ export default function EntryListStep({ champ, onDone }) {
         <p style={{ color: 'var(--color-text-muted)' }}>No players available. Add players first.</p>
       ) : (
         <>
+          <div style={{ marginBottom: '1rem' }}>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search player (min 3 chars)"
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          {!isSearchActive ? (
+            <p style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+              Type at least 3 characters to start searching players.
+            </p>
+          ) : visiblePlayers.length === 0 ? (
+            <p style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
+              No players found.
+            </p>
+          ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
-            {allPlayers.map((p) => {
+            {visiblePlayers.map((p) => {
               const checked = selected.has(String(p.id))
               return (
                 <label
@@ -94,6 +118,7 @@ export default function EntryListStep({ champ, onDone }) {
               )
             })}
           </div>
+          )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <span style={{ fontSize: '0.875rem', color: overCapacity ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
