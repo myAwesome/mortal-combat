@@ -294,6 +294,12 @@ describe('Full tournament flow', () => {
     }
   });
 
+  test('logs matches after tournament completion', async () => {
+    const logged = await repo.getLoggedMatchesByChampionshipId(champId);
+    expect(logged.length).toBeGreaterThan(0);
+    expect(logged.some((match) => match.phase === 'PLAYOFF')).toBe(true);
+  });
+
   test('POST groups/auto-fill and POST draw/auto-fill - fills all pending matches', async () => {
     const autoPlayerNames = [
       'Auto 1', 'Auto 2', 'Auto 3', 'Auto 4',
