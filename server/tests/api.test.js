@@ -298,6 +298,21 @@ describe('Full tournament flow', () => {
     const logged = await repo.getLoggedMatchesByChampionshipId(champId);
     expect(logged.length).toBeGreaterThan(0);
     expect(logged.some((match) => match.phase === 'PLAYOFF')).toBe(true);
+    expect(logged.some((match) => match.player1Id || match.player2Id)).toBe(true);
+  });
+
+  test('GET /api/players/:id/matches - returns matches grouped by championship', async () => {
+    const res = await request(app).get(`/api/players/${playerIds[0]}/matches`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body[0]).toMatchObject({
+      championship: {
+        id: expect.any(String),
+        name: expect.any(String),
+      },
+      matches: expect.any(Array),
+    });
   });
 
   test('POST groups/auto-fill and POST draw/auto-fill - fills all pending matches', async () => {

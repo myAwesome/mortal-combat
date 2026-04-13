@@ -42,6 +42,10 @@ async function migrate() {
       phase VARCHAR(16) NOT NULL,
       match_id VARCHAR(64) NOT NULL,
       stage VARCHAR(64) NULL,
+      player1_id INT NULL,
+      player2_id INT NULL,
+      winner_id INT NULL,
+      loser_id INT NULL,
       player1_name VARCHAR(255) NULL,
       player2_name VARCHAR(255) NULL,
       winner_name VARCHAR(255) NULL,
@@ -60,6 +64,10 @@ async function migrate() {
   await addColumn(`ALTER TABLE championships ADD COLUMN draw_config_json TEXT`);
   await addColumn(`ALTER TABLE championships ADD COLUMN start_date DATE NULL`);
   await addColumn(`ALTER TABLE championships ADD COLUMN end_date DATE NULL`);
+  await addColumn(`ALTER TABLE matches ADD COLUMN player1_id INT NULL`);
+  await addColumn(`ALTER TABLE matches ADD COLUMN player2_id INT NULL`);
+  await addColumn(`ALTER TABLE matches ADD COLUMN winner_id INT NULL`);
+  await addColumn(`ALTER TABLE matches ADD COLUMN loser_id INT NULL`);
   await db.execute(`
     CREATE TABLE IF NOT EXISTS ligue_players (
       id INT AUTO_INCREMENT PRIMARY KEY,

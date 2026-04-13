@@ -240,6 +240,66 @@ async function getPlayerRow(id) {
   return rows[0] ? { id: String(rows[0].id), name: rows[0].name } : null;
 }
 
+async function getPlayerMatchesGroupedByChampionship(playerId) {
+  const [rows] = await db.query(
+    `SELECT
+      m.id,
+      m.championship_id,
+      c.name AS championship_name,
+      m.phase,
+      m.match_id,
+      m.stage,
+      m.player1_id,
+      m.player2_id,
+      m.winner_id,
+      m.loser_id,
+      m.player1_name,
+      m.player2_name,
+      m.winner_name,
+      m.loser_name,
+      m.result,
+      m.created_at
+    FROM matches m
+    INNER JOIN championships c ON c.id = m.championship_id
+    WHERE m.player1_id = ? OR m.player2_id = ?
+    ORDER BY m.championship_id DESC, m.id ASC`,
+    [playerId, playerId]
+  );
+
+  const grouped = new Map();
+  rows.forEach((row) => {
+    const champId = String(row.championship_id);
+    if (!grouped.has(champId)) {
+      grouped.set(champId, {
+        championship: {
+          id: champId,
+          name: row.championship_name,
+        },
+        matches: [],
+      });
+    }
+
+    grouped.get(champId).matches.push({
+      id: String(row.id),
+      phase: row.phase,
+      matchId: row.match_id,
+      stage: row.stage,
+      player1Id: row.player1_id != null ? String(row.player1_id) : null,
+      player2Id: row.player2_id != null ? String(row.player2_id) : null,
+      winnerId: row.winner_id != null ? String(row.winner_id) : null,
+      loserId: row.loser_id != null ? String(row.loser_id) : null,
+      player1Name: row.player1_name,
+      player2Name: row.player2_name,
+      winnerName: row.winner_name,
+      loserName: row.loser_name,
+      result: row.result,
+      createdAt: row.created_at,
+    });
+  });
+
+  return Array.from(grouped.values());
+}
+
 async function createPlayer(name) {
   const [result] = await db.query('INSERT INTO players (name) VALUES (?)', [name]);
   return { id: String(result.insertId), name };
@@ -345,6 +405,10 @@ async function logCompletedMatches(champId, champ) {
           phase: 'GROUP',
           matchId: `${group.name}-${index}`,
           stage: `Group ${group.name}`,
+          player1Id: match.player1?.player?.id || null,
+          player2Id: match.player2?.player?.id || null,
+          winnerId: match.winner?.player?.id || null,
+          loserId: match.loser?.player?.id || null,
           player1Name: match.player1?.player?.name || null,
           player2Name: match.player2?.player?.name || null,
           winnerName: match.winner?.player?.name || null,
@@ -362,6 +426,10 @@ async function logCompletedMatches(champId, champ) {
         phase: 'PLAYOFF',
         matchId: match.id,
         stage: match.stage || null,
+        player1Id: match.player1?.isBye ? null : (match.player1?.player?.id || null),
+        player2Id: match.player2?.isBye ? null : (match.player2?.player?.id || null),
+        winnerId: match.winner?.isBye ? null : (match.winner?.player?.id || null),
+        loserId: match.loser?.isBye ? null : (match.loser?.player?.id || null),
         player1Name: match.player1?.player?.name || null,
         player2Name: match.player2?.player?.name || null,
         winnerName: match.winner?.player?.name || null,
@@ -373,12 +441,16 @@ async function logCompletedMatches(champId, champ) {
 
   if (rows.length === 0) return 0;
 
-  const placeholders = rows.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+  const placeholders = rows.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
   const params = rows.flatMap((row) => [
     champId,
     row.phase,
     row.matchId,
     row.stage,
+    row.player1Id,
+    row.player2Id,
+    row.winnerId,
+    row.loserId,
     row.player1Name,
     row.player2Name,
     row.winnerName,
@@ -392,6 +464,10 @@ async function logCompletedMatches(champId, champ) {
       phase,
       match_id,
       stage,
+      player1_id,
+      player2_id,
+      winner_id,
+      loser_id,
       player1_name,
       player2_name,
       winner_name,
@@ -400,6 +476,10 @@ async function logCompletedMatches(champId, champ) {
     ) VALUES ${placeholders}
     ON DUPLICATE KEY UPDATE
       stage = VALUES(stage),
+      player1_id = VALUES(player1_id),
+      player2_id = VALUES(player2_id),
+      winner_id = VALUES(winner_id),
+      loser_id = VALUES(loser_id),
       player1_name = VALUES(player1_name),
       player2_name = VALUES(player2_name),
       winner_name = VALUES(winner_name),
@@ -419,6 +499,10 @@ async function getLoggedMatchesByChampionshipId(champId) {
       phase,
       match_id,
       stage,
+      player1_id,
+      player2_id,
+      winner_id,
+      loser_id,
       player1_name,
       player2_name,
       winner_name,
@@ -437,6 +521,10 @@ async function getLoggedMatchesByChampionshipId(champId) {
     phase: row.phase,
     matchId: row.match_id,
     stage: row.stage,
+    player1Id: row.player1_id != null ? String(row.player1_id) : null,
+    player2Id: row.player2_id != null ? String(row.player2_id) : null,
+    winnerId: row.winner_id != null ? String(row.winner_id) : null,
+    loserId: row.loser_id != null ? String(row.loser_id) : null,
     player1Name: row.player1_name,
     player2Name: row.player2_name,
     winnerName: row.winner_name,
@@ -593,6 +681,7 @@ module.exports = {
   loadPlayersMap,
   getAllPlayersList,
   getPlayerRow,
+  getPlayerMatchesGroupedByChampionship,
   createPlayer,
   updatePlayer,
   deletePlayer,

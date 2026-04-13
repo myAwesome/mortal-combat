@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { getPlayer, updatePlayer, deletePlayer } from '../api/players'
+import { getPlayer, getPlayerMatches, updatePlayer, deletePlayer } from '../api/players'
 import { getChampionships } from '../api/championships'
 import { getLigues, getLiguePlayers } from '../api/ligues'
 import Spinner from '../components/Spinner'
@@ -12,6 +12,7 @@ export default function PlayerProfile() {
   const navigate = useNavigate()
   const [player, setPlayer] = useState(null)
   const [championships, setChampionships] = useState([])
+  const [matchesByChampionship, setMatchesByChampionship] = useState([])
   const [ligues, setLigues] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -22,13 +23,15 @@ export default function PlayerProfile() {
   const load = async () => {
     setLoading(true)
     try {
-      const [p, champs, ligueList] = await Promise.all([
+      const [p, champs, ligueList, groupedMatches] = await Promise.all([
         getPlayer(id),
         getChampionships(),
         getLigues(),
+        getPlayerMatches(id),
       ])
       setPlayer(p)
       setEditName(p.name)
+      setMatchesByChampionship(groupedMatches)
 
       const relatedChampionships = champs.filter((c) =>
         Array.isArray(c.players) && c.players.some((cp) => String(cp.id) === String(id))
@@ -188,6 +191,82 @@ export default function PlayerProfile() {
               })}
             </tbody>
           </table>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: '1rem' }}>
+        <h2 style={{ fontSize: '1rem', marginBottom: '0.75rem' }}>Matches by Championship</h2>
+        {matchesByChampionship.length === 0 ? (
+          <p style={{ color: 'var(--color-text-muted)' }}>No completed matches yet.</p>
+        ) : (
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {matchesByChampionship.map((group) => (
+              <div
+                key={group.championship.id}
+                style={{
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    background: '#f8fafc',
+                    padding: '0.6rem 0.75rem',
+                    borderBottom: '1px solid var(--color-border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Link
+                    to={`/championships/${group.championship.id}`}
+                    style={{ fontWeight: 600, color: 'var(--color-primary)' }}
+                  >
+                    {group.championship.name}
+                  </Link>
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                    {group.matches.length} matches
+                  </span>
+                </div>
+                <table style={{ marginBottom: 0 }}>
+                  <thead>
+                    <tr>
+                      <th>Stage</th>
+                      <th>Opponent</th>
+                      <th>Result</th>
+                      <th>Outcome</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.matches.map((match) => {
+                      const isPlayer1 = String(match.player1Id) === String(id)
+                      const opponentName = isPlayer1 ? match.player2Name : match.player1Name
+                      const isWin =
+                        (match.winnerId && String(match.winnerId) === String(id)) ||
+                        (!match.winnerId && String(match.winnerName) === String(player.name))
+                      const outcome = isWin ? 'Win' : 'Loss'
+                      return (
+                        <tr key={match.id}>
+                          <td>
+                            <div style={{ fontWeight: 500 }}>{match.stage || match.phase}</div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                              {match.phase}
+                            </div>
+                          </td>
+                          <td>{opponentName || '—'}</td>
+                          <td>{match.result || '—'}</td>
+                          <td style={{ fontWeight: 600, color: outcome === 'Win' ? '#2c7a3a' : '#c53030' }}>
+                            {outcome}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
