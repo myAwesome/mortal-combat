@@ -41,6 +41,21 @@ const generateAutoResult = (setsToWin) => {
   return sets.join(' ');
 };
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const normalizeDateInput = (value, fieldName) => {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  if (typeof value !== 'string' || !DATE_RE.test(value)) {
+    throw new Error(`${fieldName} must be in YYYY-MM-DD format`);
+  }
+  const dt = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(dt.getTime()) || dt.toISOString().slice(0, 10) !== value) {
+    throw new Error(`${fieldName} is not a valid date`);
+  }
+  return value;
+};
+
 // ── Serializers ──────────────────────────────────────────────────────────────
 const serializeSet = (set) => set ? set.toString() : null;
 
@@ -85,6 +100,8 @@ const serializeChampionship = (id, c) => ({
   id,
   name: c.name,
   capacity: c.capacity,
+  startDate: c.startDate || null,
+  endDate: c.endDate || null,
   hasGroups: c.hasGroups,
   setsToWin: c.setsToWin,
   drawConfig: c.drawConfig,
@@ -342,6 +359,8 @@ app.post('/api/championships', async (req, res) => {
   const {
     name,
     capacity,
+    startDate,
+    endDate,
     hasGroups = true,
     ligueId = null,
     pointsConfig = null,
@@ -366,6 +385,17 @@ app.post('/api/championships', async (req, res) => {
       });
     }
   }
+  let normalizedStartDate;
+  let normalizedEndDate;
+  try {
+    normalizedStartDate = normalizeDateInput(startDate, 'startDate');
+    normalizedEndDate = normalizeDateInput(endDate, 'endDate');
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+  if (normalizedStartDate && normalizedEndDate && normalizedEndDate < normalizedStartDate) {
+    return res.status(400).json({ error: 'endDate must be on or after startDate' });
+  }
   try {
     const { id, champ } = await repo.createChampionship(
       name,
@@ -374,7 +404,9 @@ app.post('/api/championships', async (req, res) => {
       ligueId,
       pointsConfig,
       Number(setsToWin),
-      drawConfig
+      drawConfig,
+      normalizedStartDate ?? null,
+      normalizedEndDate ?? null
     );
     res.status(201).json(serializeChampionship(id, champ));
   } catch (e) {
@@ -394,9 +426,17 @@ app.get('/api/championships/:id', async (req, res) => {
 });
 
 app.put('/api/championships/:id', async (req, res) => {
-  const { name, capacity, hasGroups, setsToWin } = req.body;
+  const { name, capacity, hasGroups, setsToWin, startDate, endDate } = req.body;
   if (setsToWin !== undefined && ![1, 2, 3].includes(Number(setsToWin))) {
     return res.status(400).json({ error: 'setsToWin must be 1, 2 or 3' });
+  }
+  let normalizedStartDate;
+  let normalizedEndDate;
+  try {
+    normalizedStartDate = normalizeDateInput(startDate, 'startDate');
+    normalizedEndDate = normalizeDateInput(endDate, 'endDate');
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
   }
   try {
     const playersMap = await repo.loadPlayersMap();
@@ -408,8 +448,23 @@ app.put('/api/championships/:id', async (req, res) => {
     if (capacity !== undefined) champ.capacity = capacity;
     if (hasGroups !== undefined) champ.hasGroups = hasGroups;
     if (setsToWin !== undefined) champ.setsToWin = Number(setsToWin);
+    if (normalizedStartDate !== undefined) champ.startDate = normalizedStartDate;
+    if (normalizedEndDate !== undefined) champ.endDate = normalizedEndDate;
 
-    await repo.updateChampionshipFields(req.params.id, { name, capacity, hasGroups, setsToWin });
+    const nextStartDate = normalizedStartDate !== undefined ? normalizedStartDate : champ.startDate;
+    const nextEndDate = normalizedEndDate !== undefined ? normalizedEndDate : champ.endDate;
+    if (nextStartDate && nextEndDate && nextEndDate < nextStartDate) {
+      return res.status(400).json({ error: 'endDate must be on or after startDate' });
+    }
+
+    await repo.updateChampionshipFields(req.params.id, {
+      name,
+      capacity,
+      hasGroups,
+      setsToWin,
+      startDate: normalizedStartDate,
+      endDate: normalizedEndDate,
+    });
     res.json(serializeChampionship(found.id, champ));
   } catch (e) {
     res.status(500).json({ error: e.message });
