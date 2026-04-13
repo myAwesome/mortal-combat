@@ -35,6 +35,23 @@ async function migrate() {
       state_json LONGTEXT
     ) ENGINE=InnoDB
   `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS matches (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      championship_id INT NOT NULL,
+      phase VARCHAR(16) NOT NULL,
+      match_id VARCHAR(64) NOT NULL,
+      stage VARCHAR(64) NULL,
+      player1_name VARCHAR(255) NULL,
+      player2_name VARCHAR(255) NULL,
+      winner_name VARCHAR(255) NULL,
+      loser_name VARCHAR(255) NULL,
+      result VARCHAR(64) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_championship_match (championship_id, phase, match_id),
+      FOREIGN KEY (championship_id) REFERENCES championships(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB
+  `);
   await addColumn(`ALTER TABLE championships ADD COLUMN ligue_linked TINYINT(1) NOT NULL DEFAULT 0`);
   await addColumn(`ALTER TABLE championships ADD COLUMN ligue_synced TINYINT(1) NOT NULL DEFAULT 0`);
   await addColumn(`ALTER TABLE championships ADD COLUMN ligue_id INT NULL`);

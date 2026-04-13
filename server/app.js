@@ -737,6 +737,9 @@ app.put('/api/championships/:id/draw/matches/:matchId', async (req, res) => {
     if (champ.ligueId && !champ.ligueSynced && isComplete) {
       await repo.syncChampionshipToLigue(id, champ);
     }
+    if (isComplete) {
+      await repo.logCompletedMatches(id, champ);
+    }
 
     res.json(serializePlayOffMatch(m));
   } catch (e) {
@@ -778,6 +781,9 @@ app.post('/api/championships/:id/draw/auto-fill', async (req, res) => {
     const isComplete = champ.draw.completedMatches === champ.draw.matches.size;
     if (champ.ligueId && !champ.ligueSynced && isComplete) {
       await repo.syncChampionshipToLigue(id, champ);
+    }
+    if (isComplete) {
+      await repo.logCompletedMatches(id, champ);
     }
 
     res.json({

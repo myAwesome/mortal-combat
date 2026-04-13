@@ -334,6 +334,118 @@ async function saveChampionshipState(id, champ) {
   );
 }
 
+async function logCompletedMatches(champId, champ) {
+  const rows = [];
+
+  if (Array.isArray(champ.groups)) {
+    champ.groups.forEach((group) => {
+      group.matches.forEach((match, index) => {
+        if (!match.result) return;
+        rows.push({
+          phase: 'GROUP',
+          matchId: `${group.name}-${index}`,
+          stage: `Group ${group.name}`,
+          player1Name: match.player1?.player?.name || null,
+          player2Name: match.player2?.player?.name || null,
+          winnerName: match.winner?.player?.name || null,
+          loserName: match.loser?.player?.name || null,
+          result: match.result.toString(),
+        });
+      });
+    });
+  }
+
+  if (champ.draw?.matches) {
+    Array.from(champ.draw.matches.values()).forEach((match) => {
+      if (!match.result) return;
+      rows.push({
+        phase: 'PLAYOFF',
+        matchId: match.id,
+        stage: match.stage || null,
+        player1Name: match.player1?.player?.name || null,
+        player2Name: match.player2?.player?.name || null,
+        winnerName: match.winner?.player?.name || null,
+        loserName: match.loser?.player?.name || null,
+        result: match.result.toString(),
+      });
+    });
+  }
+
+  if (rows.length === 0) return 0;
+
+  const placeholders = rows.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?)').join(', ');
+  const params = rows.flatMap((row) => [
+    champId,
+    row.phase,
+    row.matchId,
+    row.stage,
+    row.player1Name,
+    row.player2Name,
+    row.winnerName,
+    row.loserName,
+    row.result,
+  ]);
+
+  await db.query(
+    `INSERT INTO matches (
+      championship_id,
+      phase,
+      match_id,
+      stage,
+      player1_name,
+      player2_name,
+      winner_name,
+      loser_name,
+      result
+    ) VALUES ${placeholders}
+    ON DUPLICATE KEY UPDATE
+      stage = VALUES(stage),
+      player1_name = VALUES(player1_name),
+      player2_name = VALUES(player2_name),
+      winner_name = VALUES(winner_name),
+      loser_name = VALUES(loser_name),
+      result = VALUES(result)`,
+    params
+  );
+
+  return rows.length;
+}
+
+async function getLoggedMatchesByChampionshipId(champId) {
+  const [rows] = await db.query(
+    `SELECT
+      id,
+      championship_id,
+      phase,
+      match_id,
+      stage,
+      player1_name,
+      player2_name,
+      winner_name,
+      loser_name,
+      result,
+      created_at
+    FROM matches
+    WHERE championship_id = ?
+    ORDER BY id ASC`,
+    [champId]
+  );
+
+  return rows.map((row) => ({
+    id: String(row.id),
+    championshipId: String(row.championship_id),
+    phase: row.phase,
+    matchId: row.match_id,
+    stage: row.stage,
+    player1Name: row.player1_name,
+    player2Name: row.player2_name,
+    winnerName: row.winner_name,
+    loserName: row.loser_name,
+    result: row.result,
+    createdAt: row.created_at,
+  }));
+}
+
 async function deleteChampionship(id) {
   const [result] = await db.query('DELETE FROM championships WHERE id = ?', [id]);
   return result.affectedRows > 0;
@@ -469,6 +581,7 @@ async function deleteLiguePlayerForLigue(ligueId, id) {
 
 async function truncateAll() {
   await db.query('SET FOREIGN_KEY_CHECKS = 0');
+  await db.query('TRUNCATE TABLE matches');
   await db.query('TRUNCATE TABLE ligue_players');
   await db.query('TRUNCATE TABLE championships');
   await db.query('TRUNCATE TABLE ligues');
@@ -489,6 +602,8 @@ module.exports = {
   createChampionship,
   updateChampionshipFields,
   saveChampionshipState,
+  logCompletedMatches,
+  getLoggedMatchesByChampionshipId,
   deleteChampionship,
   getAllLigues,
   getLigueById,
