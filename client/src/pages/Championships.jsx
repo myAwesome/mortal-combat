@@ -85,7 +85,7 @@ function PointsConfigForm({ capacity, hasGroups, value, onChange }) {
   )
 }
 
-const defaultDrawConfig = { playThirdPlaceMatch: true, playPlacementBrackets: true }
+const defaultDrawConfig = { playThirdPlaceMatch: false, playPlacementBrackets: false }
 
 function formatDate(value) {
   if (!value) return '—'
@@ -294,9 +294,9 @@ export default function Championships() {
                     onChange={(e) => setForm((f) => ({ ...f, setsToWin: Number(e.target.value) }))}
                     style={{ width: '150px' }}
                   >
-                    <option value={1}>До 1 сету</option>
-                    <option value={2}>До 2 сетів</option>
-                    <option value={3}>До 3 сетів</option>
+                    <option value={1}>Best of 1</option>
+                    <option value={2}>Best of 3</option>
+                    <option value={3}>Best of 5</option>
                   </select>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingBottom: '2px' }}>
@@ -311,7 +311,7 @@ export default function Championships() {
                         }))
                       }
                     />
-                    <span>Матч за 3 місце</span>
+                    <span>Final for 3 place</span>
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.875rem' }}>
                     <input
@@ -324,7 +324,7 @@ export default function Championships() {
                         }))
                       }
                     />
-                    <span>Сітка за 5+ місця</span>
+                    <span>Playoff for 5+ place</span>
                   </label>
                 </div>
               </div>

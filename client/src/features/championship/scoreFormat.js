@@ -9,9 +9,9 @@ export function getScorePlaceholder(setsToWin = 1) {
 }
 
 export function getMatchFormatLabel(setsToWin = 1) {
-  if (Number(setsToWin) === 1) return 'До 1 сету'
-  if (Number(setsToWin) === 2) return 'До 2 сетів'
-  return 'До 3 сетів'
+  if (Number(setsToWin) === 1) return 'Best of 1'
+  if (Number(setsToWin) === 2) return 'Best of 3'
+  return 'Best of 5'
 }
 
 export function isScoreInputShapeValid(value, setsToWin = 1) {
