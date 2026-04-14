@@ -66,7 +66,7 @@ export default function EntryListStep({ champ, onDone }) {
     // Search players when query >= 3 chars
     useEffect(() => {
         const query = search.trim()
-        if (query.length < 3) {
+        if (query.length < 2) {
             setSearchResults([])
             setLoadingSearch(false)
             return

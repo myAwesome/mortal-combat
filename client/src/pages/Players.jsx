@@ -23,7 +23,7 @@ export default function Players() {
   const currentPage = Math.min(page, totalPages)
   const start = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE
   const searchValue = search.trim()
-  const isSearchActive = searchValue.length >= 3
+  const isSearchActive = searchValue.length >= 2
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -85,143 +85,150 @@ export default function Players() {
   }
 
   return (
-    <div>
-      <div className="page-header">
-        <h1>Players</h1>
-      </div>
+      <div>
+        <div className="page-header">
+          <h1>Players</h1>
+        </div>
 
-      <ErrorMessage error={error} />
+        <ErrorMessage error={error}/>
 
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <form onSubmit={handleCreate} style={{ display: 'flex', gap: '0.5rem' }}>
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Player name"
-            style={{ flexGrow: 1 }}
-          />
-          <button type="submit" className="btn" disabled={creating || !newName.trim()}>
-            {creating ? 'Adding…' : 'Add Player'}
-          </button>
-        </form>
-      </div>
+        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem'}}>
+          <div className="card">
+            <input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setPage(1)
+                }}
+                placeholder="Search players"
+                style={{width: '100%'}}
+            />
+          </div>
+          <div className="card">
+            <form onSubmit={handleCreate} style={{display: 'flex', gap: '0.5rem'}}>
+              <input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Player name"
+                  style={{flexGrow: 1}}
+              />
+              <button type="submit" className="btn" disabled={creating || !newName.trim()}>
+                {creating ? 'Adding…' : 'Add Player'}
+              </button>
+            </form>
+          </div>
+        </div>
 
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value)
-            setPage(1)
-          }}
-          placeholder="Search players"
-          style={{ width: '100%' }}
-        />
-      </div>
-
-      <div className="card">
-        {loading ? (
-          <Spinner />
-        ) : total === 0 ? (
-          <p style={{ color: 'var(--color-text-muted)', padding: '1rem 0' }}>
-            {isSearchActive ? 'No players found.' : 'No players yet.'}
-          </p>
-        ) : (
-          <>
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {players.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      {editingId === p.id ? (
-                        <form
-                          onSubmit={(e) => { e.preventDefault(); handleEdit(p.id) }}
-                          style={{ display: 'flex', gap: '0.4rem' }}
-                        >
-                          <input
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            autoFocus
-                            style={{ width: '200px' }}
-                          />
-                          <button type="submit" className="btn btn-sm">Save</button>
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            onClick={() => setEditingId(null)}
-                          >
-                            Cancel
-                          </button>
-                        </form>
-                      ) : (
-                        <Link to={`/players/${p.id}`} style={{ fontWeight: 500 }}>
-                          {p.name}
-                        </Link>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      {editingId !== p.id && (
-                        <>
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            style={{ marginRight: '0.5rem' }}
-                            onClick={() => { setEditingId(p.id); setEditName(p.name) }}
-                          >
-                            Edit
-                          </button>
-                          <ConfirmButton onConfirm={() => handleDelete(p.id)}>
-                            Delete
-                          </ConfirmButton>
-                        </>
-                      )}
-                    </td>
+        <div className="card">
+          {loading ? (
+              <Spinner/>
+          ) : total === 0 ? (
+              <p style={{color: 'var(--color-text-muted)', padding: '1rem 0'}}>
+                {isSearchActive ? 'No players found.' : 'No players yet.'}
+              </p>
+          ) : (
+              <>
+                <table>
+                  <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                  {players.map((p) => (
+                      <tr key={p.id}>
+                        <td>
+                          {editingId === p.id ? (
+                              <form
+                                  onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleEdit(p.id)
+                                  }}
+                                  style={{display: 'flex', gap: '0.4rem'}}
+                              >
+                                <input
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    autoFocus
+                                    style={{width: '200px'}}
+                                />
+                                <button type="submit" className="btn btn-sm">Save</button>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => setEditingId(null)}
+                                >
+                                  Cancel
+                                </button>
+                              </form>
+                          ) : (
+                              <Link to={`/players/${p.id}`} style={{fontWeight: 500}}>
+                                {p.name}
+                              </Link>
+                          )}
+                        </td>
+                        <td style={{textAlign: 'right', whiteSpace: 'nowrap'}}>
+                          {editingId !== p.id && (
+                              <>
+                                <button
+                                    className="btn btn-secondary btn-sm"
+                                    style={{marginRight: '0.5rem'}}
+                                    onClick={() => {
+                                      setEditingId(p.id);
+                                      setEditName(p.name)
+                                    }}
+                                >
+                                  Edit
+                                </button>
+                                <ConfirmButton onConfirm={() => handleDelete(p.id)}>
+                                  Delete
+                                </ConfirmButton>
+                              </>
+                          )}
+                        </td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
 
-            <div
-              style={{
-                marginTop: '1rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: '0.75rem',
-              }}
-            >
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                <div
+                    style={{
+                      marginTop: '1rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                    }}
+                >
+              <span style={{color: 'var(--color-text-muted)', fontSize: '0.875rem'}}>
                 Showing {start + 1}-{Math.min(start + players.length, total)} of {total}
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                    <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                    >
+                      Previous
+                    </button>
+                    <span style={{fontSize: '0.875rem', color: 'var(--color-text-muted)'}}>
                   Page {currentPage} of {totalPages}
                 </span>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages || players.length === 0}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </>
-        )}
+                    <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages || players.length === 0}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </>
+          )}
+        </div>
       </div>
-    </div>
-  )
+  );
 }
