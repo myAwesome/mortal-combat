@@ -9,6 +9,7 @@ import GroupStageStep from '../features/championship/GroupStageStep'
 import DrawStep from '../features/championship/DrawStep'
 import Spinner from '../components/Spinner'
 import ErrorMessage from '../components/ErrorMessage'
+import PlayerLink from "../components/PlayerLink.jsx";
 
 function formatPlaceLabel(place) {
   const mod100 = place % 100
@@ -217,7 +218,7 @@ export default function ChampionshipDetail() {
                     {sortedByPoints.map((p, idx) => (
                       <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                         <td style={{ padding: '0.5rem' }}>{idx + 1}</td>
-                        <td style={{ padding: '0.5rem' }}>{p.name}</td>
+                        <td style={{ padding: '0.5rem' }}><PlayerLink player={p}/></td>
                         <td style={{ padding: '0.5rem' }}>{resultByPlayer.get(p.name) || '-'}</td>
                         <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>{p.points || 0}</td>
                       </tr>

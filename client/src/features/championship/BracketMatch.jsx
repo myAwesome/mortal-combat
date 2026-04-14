@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { recordDrawMatch } from '../../api/championships'
 import { getScorePlaceholder, isScoreInputShapeValid } from './scoreFormat'
+import PlayerLink from "../../components/PlayerLink.jsx";
 
 function PlayerRow({ player, isWinner, result }) {
+  console.log(player)
   if (!player) {
     return <div className="bracket-player-row empty">TBD</div>
   }

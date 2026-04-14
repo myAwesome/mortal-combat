@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { recordGroupMatch } from '../../api/championships'
 import { getScorePlaceholder, isScoreInputShapeValid } from './scoreFormat'
 import './GroupCard.css'
+import PlayerLink from "../../components/PlayerLink";
 
 function ResultInput({ onSubmit, disabled, setsToWin }) {
   const [value, setValue] = useState('')
@@ -77,7 +78,7 @@ export default function GroupCard({ champ, group, onDone }) {
             <tbody>
               {sortedPlayers.map((p) => (
                 <tr key={p.name} className={p.place !== null && p.place <= 2 ? 'winner-row' : ''}>
-                  <td>{p.name}</td>
+                  <td><PlayerLink player={p}/></td>
                   <td style={{ textAlign: 'center' }}>{p.win ?? 0}</td>
                   <td style={{ textAlign: 'center' }}>{p.loose ?? 0}</td>
                   <td style={{ textAlign: 'center', fontWeight: 600 }}>{p.points ?? 0}</td>

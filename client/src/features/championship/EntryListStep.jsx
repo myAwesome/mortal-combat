@@ -4,6 +4,7 @@ import { getPlayers } from '../../api/players'
 import { setEntryList } from '../../api/championships'
 import ErrorMessage from '../../components/ErrorMessage'
 import Spinner from '../../components/Spinner'
+import PlayerLink from "../../components/PlayerLink.jsx";
 
 export default function EntryListStep({ champ, onDone }) {
     const [selected, setSelected] = useState(new Set())
@@ -213,15 +214,7 @@ export default function EntryListStep({ champ, onDone }) {
                                     onChange={() => toggle(p)}
                                     style={{ accentColor: 'var(--color-primary)' }}
                                 />
-                                <Link
-                                    to={`/players/${p.id}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    style={{ color: 'inherit', textDecoration: 'none' }}
-                                    onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
-                                    onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
-                                >
-                                    {p.name}
-                                </Link>
+                                <PlayerLink player={p}/>
                             </label>
                         )
                     })}
